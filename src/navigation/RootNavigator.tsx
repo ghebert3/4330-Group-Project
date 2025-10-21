@@ -1,39 +1,68 @@
-// src/navigation/RootNavigator.tsx
 import { useEffect, useState } from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text } from 'react-native';
-
-import LoginScreen from '../screens/LoginScreen';
-import SignUpScreen from '../screens/SignUpScreen';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
-import type { AuthStackParamList } from './types'; // <- src/navigation/types.ts
 
-const Stack = createNativeStackNavigator<AuthStackParamList>();
+// Screens
+import LoginScreen from '../screens/LoginScreen';
+import SignUpScreen from '../screens/SignUpScreen';
+import HomeScreen from '../screens/HomeScreen';
+
+const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
 
-function FeedScreen() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Feed</Text>
-    </View>
-  );
-}
-
+// Tab Nav
 function AppTabs() {
   return (
-    <Tabs.Navigator screenOptions={{ headerShown: false }}>
-      <Tabs.Screen name="Feed" component={FeedScreen} />
+    <Tabs.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarShowLabel: false,
+        tabBarStyle: { borderTopWidth: 1, borderTopColor: '#ddd' },
+        tabBarIcon: ({ color, size, focused }) => {
+          let iconName: keyof typeof Ionicons.glyphMap = 'home-outline';
+
+          switch (route.name) {
+            case 'Home':
+              iconName = focused ? 'home' : 'home-outline';
+              break;
+            case 'Search':
+              iconName = focused ? 'search' : 'search-outline';
+              break;
+            case 'Discover':
+              iconName = focused ? 'add-circle' : 'add-circle-outline';
+              break;
+            case 'Alerts':
+              iconName = focused ? 'heart' : 'heart-outline';
+              break;
+            case 'Profile':
+              iconName = focused ? 'person-circle' : 'person-circle-outline';
+              break;
+          }
+
+          return <Ionicons name={iconName} size={size} color={focused ? '#5903C3' : color} />;
+        },
+        tabBarActiveTintColor: '#5903C3',
+        tabBarInactiveTintColor: '#777',
+      })}
+    >
+      <Tabs.Screen name="Home" component={HomeScreen} />
+      <Tabs.Screen name="Search" component={HomeScreen} />
+      <Tabs.Screen name="Discover" component={HomeScreen} />
+      <Tabs.Screen name="Alerts" component={HomeScreen} />
+      <Tabs.Screen name="Profile" component={HomeScreen} />
     </Tabs.Navigator>
   );
 }
 
+//  Root Nav
 export default function RootNavigator() {
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
-  // Normal auth state check
   useEffect(() => {
     supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
       setIsAuthed(!!data.session);
@@ -44,24 +73,25 @@ export default function RootNavigator() {
         setIsAuthed(!!session);
       }
     );
+
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // --- TEMP (optional): force sign-out once to show SignUp first ---
-  // useEffect(() => { (async () => { try { await supabase.auth.signOut(); } catch {} })(); }, []);
-  // ---------------------------------------------------------------
-
-  if (isAuthed === null) return null;
+  if (isAuthed === null) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator />
+        <Text style={{ marginTop: 8 }}>Loading…</Text>
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
       {isAuthed ? (
         <AppTabs />
       ) : (
-        <Stack.Navigator
-          screenOptions={{ headerShown: false }}
-          initialRouteName="SignUp" // start on SignUp when logged out
-        >
+        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="SignUp">
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="SignUp" component={SignUpScreen} />
         </Stack.Navigator>
