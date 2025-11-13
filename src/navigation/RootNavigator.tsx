@@ -11,6 +11,7 @@ import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import HomeScreen from '../screens/HomeScreen';
+import MeetupsScreen from '../screens/meetups';
 
 const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
@@ -36,8 +37,8 @@ function AppTabs() {
             case 'Discover':
               iconName = focused ? 'add-circle' : 'add-circle-outline';
               break;
-            case 'Alerts':
-              iconName = focused ? 'heart' : 'heart-outline';
+            case 'Meetups':
+              iconName = focused ? 'cloud' : 'cloud-outline';
               break;
             case 'Profile':
               iconName = focused ? 'person-circle' : 'person-circle-outline';
@@ -53,7 +54,7 @@ function AppTabs() {
       <Tabs.Screen name="Home" component={HomeScreen} />
       <Tabs.Screen name="Search" component={HomeScreen} />
       <Tabs.Screen name="Discover" component={HomeScreen} />
-      <Tabs.Screen name="Alerts" component={HomeScreen} />
+      <Tabs.Screen name="Meetups" component={MeetupsScreen} />
       <Tabs.Screen name="Profile" component={HomeScreen} />
     </Tabs.Navigator>
   );

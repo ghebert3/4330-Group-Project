@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-// Our Images
+//Images
 const STORIES = [
   { id: 'me', avatar: require('../../assets/avatars/me.png'), canAdd: true },
   { id: 'u1', avatar: require('../../assets/avatars/user1.png') },
