@@ -1,35 +1,66 @@
-# 🐯 Whirl - LSU Campus Social App
+# 🐯 Whirl – LSU Campus Social App
 
-Whirl is a mobile application designed to help **Louisiana State University (LSU)** students meet new friends, find clubs, and join campus events.  
-Our mission is to make it easier for students to connect, explore LSU life, and stay informed all while using a secure, LSU-exclusive space.
+Whirl is a mobile application built for **Louisiana State University (LSU)** students to meet new people, join student activities, and stay connected with campus life.  
+Our mission is to create a **private, LSU-exclusive communication and discovery platform** that supports friendships, clubs, meetups, and campus engagement.
 
 ---
 
 ## 👥 Team & Roles
 
-| Member            | Role                                            |
-| ----------------- | ----------------------------------------------- |
-| **Carter Mauer**  | Backend Developer –> Supabase Integration & Auth |
-| **Thomas Lee**    | Frontend Developer –> Navigation & UI Components |
-| **Gerald Hebert** | Frontend Developer –> Events & Discovery         |
-| **Nguyen Vu**     | UX Designer –> Layouts & Prototypes              |
-| **Cole Heausler** | Frontend & Backend Developer                    |
+| Member            | Role / Responsibilities                                   |
+| ----------------- | --------------------------------------------------------- |
+| **Carter Mauer**  | Supabase Integration, Authentication, Backend Structure   |
+| **Thomas Lee**    | Profile Screen & Home Feed UI                             |
+| **Gerald Hebert** | Events / Meetups System & Booking Workflow                |
+| **Nguyen Vu**     | Social Feed Swipe (Discovery Page)                        |
+| **Cole Heausler** | Search Screen & Meetup Application / Event Signup Flow    |
 
 ---
 
-## 🌊 Overview
+## 🌊 Project Overview
 
-This app is being built with **React Native (Expo)** for the frontend and **Supabase** for backend services (authentication, database, and storage).
+Whirl is being developed with **React Native (Expo)** on the frontend and **Supabase** for backend services including:
 
-### 🧠 Key Features (In Progress)
+- Authentication  
+- Database  
+- Row-Level Security  
+- Storage buckets  
 
-- 🔐 **Secure Login / Signup** using LSU email accounts (`@lsu.edu`)
-- 👤 **User Profiles** with bio, avatar, and interests
-- 🏠 **Home Feed** for posts and stories
-- 💬 **Discovery** page to meet new people through swiping
-- 📅 **Events & Booking** for LSU clubs or student activities
-- ✉️ **Private Messaging** (planned)
-- 🛡️ **Safety Controls** like privacy toggle and report system
+The app architecture supports onboarding, discovery, posting, swiping, event creation, and messaging.
+
+---
+
+## 🧠 Core Features (Active Development)
+
+### 🔐 Authentication
+- LSU-restricted login/signup (`@lsu.edu`)
+- Secure session token handling
+- Auto-reauthentication on app reload  
+- Auth-based routing using RootNavigator
+
+### 👤 Profiles & User Data
+- Editable profile (bio, avatar, interests, major)
+- Auto-profile creation on sign-up (planned trigger)
+
+### 🏠 Home Feed
+- Story bubbles (24-hour stories)
+- Posts feed UI with image viewer
+
+### 💬 Discovery (Swipe System)
+- Swipe left/right on other students  
+- Mutual matches create connections
+
+### 📅 Events & Meetups
+- Browse events and student meetups  
+- RSVP/booking system (in progress)
+
+### 🛡️ Safety & Controls
+- Report user/report content modal  
+- Privacy toggle for public/private profile  
+- Moderation logs in Supabase
+
+### ✉️ Messaging (Planned)
+- One-to-one chat between matched users  
 
 ---
 
@@ -38,38 +69,36 @@ This app is being built with **React Native (Expo)** for the frontend and **Supa
 | Layer    | Technology                    | Purpose                                      |
 | -------- | ----------------------------- | -------------------------------------------- |
 | Frontend | **React Native (Expo)**       | Mobile UI framework for iOS & Android        |
-| Backend  | **Supabase**                  | Authentication, database, file storage       |
-| Database | **PostgreSQL (via Supabase)** | Stores user data, posts, events, and matches |
-| Auth     | **Supabase Auth**             | Email + password (restricted to LSU emails)  |
-| Storage  | **Supabase Storage**          | User avatars, posts, and stories             |
-| Language | **TypeScript**                | Strongly-typed React Native code             |
+| Backend  | **Supabase**                  | Auth, database, storage, and RLS             |
+| Database | **PostgreSQL (Supabase)**     | All app data (profiles, events, posts, etc.) |
+| Auth     | **Supabase Auth**             | LSU email/password login                     |
+| Storage  | **Supabase Storage**          | Avatars, posts, stories, event media         |
+| Language | **TypeScript**                | Strongly-typed codebase                      |
 
 ---
 
 ## 🗂️ Project Structure
 
-```
 4330-Group-Project/
 │
-├── App.tsx                # Entry point
+├── App.tsx
 ├── src/
-│   ├── lib/
-│   │   └── supabase.ts    # Supabase client setup
-│   ├── navigation/
-│   │   └── RootNavigator.tsx
-│   ├── screens/
-│   │   ├── LoginScreen.tsx
-│   │   ├── SignUpScreen.tsx
-│   │   ├── HomeScreen.tsx
-│   │   └── (more screens soon)
-│   ├── types.ts
-│   └── tokens.ts
+│ ├── lib/
+│ │ └── supabase.ts # Supabase client setup
+│ ├── navigation/
+│ │ └── RootNavigator.tsx # Auth flow + tab navigation
+│ ├── screens/
+│ │ ├── LoginScreen.tsx
+│ │ ├── SignUpScreen.tsx
+│ │ ├── HomeScreen.tsx # Stories + feed UI
+│ │ └── (future screens)
+│ ├── types.ts
+│ └── tokens.ts # Colors + spacing tokens
 │
 ├── package.json
 ├── tsconfig.json
 ├── app.json
 └── README.md
-```
 
 ---
 
@@ -123,29 +152,6 @@ Then:
 | `reports`  | User safety and moderation logs                    |
 
 > The schema and Row-Level Security (RLS) policies are managed directly in Supabase.
-
----
-
-## 🧠 Current Implementation
-
-✅ Supabase authentication (Login / Sign Up)  
-✅ Navigation setup (RootNavigator + Tabs)  
-✅ Basic Home feed UI (stories & posts layout)  
-✅ Connected Supabase client  
-🕓 In Progress: database integration, profile onboarding, and event creation
-
----
-
-## 🏗️ Planned Next Steps
-
-- [ ] Enforce LSU email domain check on sign-up
-- [ ] Add `profiles` table & automatic creation trigger
-- [ ] Create Supabase storage buckets (avatars, stories, posts)
-- [ ] Fetch feed data from Supabase
-- [ ] Implement “Discover” swipe screen + mutual matches
-- [ ] Create “Events” system for meetups and clubs
-- [ ] Add privacy toggle & report functionality
-- [ ] Improve UI animations and navigation polish
 
 ---
 
