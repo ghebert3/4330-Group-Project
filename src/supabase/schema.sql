@@ -15,12 +15,16 @@ end;
 $$;
 
 -- Attach to auth.users so it's enforced on sign-up / email change
+-- Drop the old trigger
 drop trigger if exists trg_enforce_lsu_email on auth.users;
 
+-- Recreate it so it only fires:
+--   - on INSERT (new signups)
+--   - on UPDATE *of the email column* (when email changes)
 create trigger trg_enforce_lsu_email
-before insert or update on auth.users
-for each row execute function public.enforce_lsu_email();
-
+before insert or update of email on auth.users
+for each row
+execute function public.enforce_lsu_email();
 
 -- 1. TYPE(S)
 
@@ -31,7 +35,7 @@ exception when duplicate_object then
 end $$;
 
 
--- 2. TABLE DEFINITIONS (MATCH YOUR CURRENT TABLES)
+-- 2. TABLE DEFINITIONS
 
 -- PROFILES
 create table if not exists public.profiles (
@@ -40,7 +44,7 @@ create table if not exists public.profiles (
   created_at timestamptz default now()
 );
 
--- Extra columns for Kanban features (safe to run multiple times)
+-- extra columns for Kanban features (safe to run multiple times)
 alter table public.profiles
   add column if not exists username text unique,
   add column if not exists avatar_url text,
@@ -131,24 +135,19 @@ create table if not exists public.user_interests (
 -- 3. AUTO-CREATE PROFILE ON AUTH.SIGNUP
 
 create or replace function public.handle_new_user()
-returns trigger
-language plpgsql
-security definer
-as $$
+returns trigger as $$
 begin
-  insert into public.profiles (id, email, created_at)
-  values (new.id, new.email, now())
-  on conflict (id) do nothing;
+  insert into public.profiles (id, email)
+  values (new.id, new.email);
   return new;
 end;
-$$;
+$$ language plpgsql security definer;
 
 drop trigger if exists on_auth_user_created on auth.users;
 
 create trigger on_auth_user_created
-after insert on auth.users
-for each row execute function public.handle_new_user();
-
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
 
 -- 4. ENABLE RLS ON ALL APP TABLES
 
@@ -169,21 +168,21 @@ alter table public.user_interests enable row level security;
 drop policy if exists "profiles read all"                 on public.profiles;
 drop policy if exists "profiles insert (user or service)" on public.profiles;
 drop policy if exists "profiles update own"               on public.profiles;
+drop policy if exists "profiles insert via auth trigger"  on public.profiles;
 
--- Anyone can read profiles (later filter by is_private in queries)
+-- anyone can read profiles (later filter by is_private in queries)
 create policy "profiles read all"
 on public.profiles for select
 using (true);
 
--- Allow service_role (backend) and owners to insert
-create policy "profiles insert (user or service)"
-on public.profiles for insert
-with check (
-  auth.role() = 'service_role'
-  or auth.uid() = id
-);
+-- allow service_role (backend) and owners to insert
+drop policy if exists "profiles insert (user or service)" on public.profiles;
 
--- Owners can update their own profile
+create policy "profiles insert via auth trigger"
+on public.profiles for insert
+with check (true);
+
+-- owners can update their own profile
 create policy "profiles update own"
 on public.profiles for update
 using (auth.uid() = id)
@@ -196,12 +195,12 @@ drop policy if exists "posts insert own"   on public.posts;
 drop policy if exists "posts update own"   on public.posts;
 drop policy if exists "posts delete own"   on public.posts;
 
--- Public feed
+-- public feed
 create policy "posts read all"
 on public.posts for select
 using (true);
 
--- Only author can create, update, delete
+-- only author can create, update, delete
 create policy "posts insert own"
 on public.posts for insert
 with check (auth.uid() = author);
@@ -221,12 +220,12 @@ drop policy if exists "stories read unexpired" on public.stories;
 drop policy if exists "stories insert own"     on public.stories;
 drop policy if exists "stories delete own"     on public.stories;
 
--- Show only unexpired stories
+-- show only unexpired stories
 create policy "stories read unexpired"
 on public.stories for select
 using (expires_at > now());
 
--- Only author creates/deletes
+-- only author creates/deletes
 create policy "stories insert own"
 on public.stories for insert
 with check (auth.uid() = author);
@@ -267,12 +266,12 @@ using (auth.uid() = swiper);
 drop policy if exists "matches read participants" on public.matches;
 drop policy if exists "matches insert server"     on public.matches;
 
--- Only participants can see the match
+-- only participants can see the match
 create policy "matches read participants"
 on public.matches for select
 using (auth.uid() in (a, b));
 
--- Only backend (service_role / edge function) should insert matches
+-- only backend (service_role / edge function) should insert matches
 create policy "matches insert server"
 on public.matches for insert
 with check (false);
@@ -308,12 +307,12 @@ drop policy if exists "events insert host" on public.events;
 drop policy if exists "events update host" on public.events;
 drop policy if exists "events delete host" on public.events;
 
--- Everyone can see events (later add private events with a flag)
+-- everyone can see events (later add private events with a flag)
 create policy "events read all"
 on public.events for select
 using (true);
 
--- Host manages their own events
+-- host manages their own events
 create policy "events insert host"
 on public.events for insert
 with check (auth.uid() = host);
@@ -332,7 +331,7 @@ using (auth.uid() = host);
 drop policy if exists "reports insert own" on public.reports;
 drop policy if exists "reports read own"   on public.reports;
 
--- Users can file reports; can read their own
+-- users can file reports; can read their own
 create policy "reports insert own"
 on public.reports for insert
 with check (auth.uid() = reporter);
@@ -348,7 +347,7 @@ drop policy if exists "user_interests insert own" on public.user_interests;
 drop policy if exists "user_interests update own" on public.user_interests;
 drop policy if exists "user_interests delete own" on public.user_interests;
 
--- Privacy-first version: only see own interests
+-- privacy-first version: only see own interests
 create policy "user_interests read own"
 on public.user_interests for select
 using (auth.uid() = user_id);
