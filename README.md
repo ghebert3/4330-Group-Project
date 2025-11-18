@@ -99,6 +99,29 @@ Then:
 - Scan the QR code with your phone using the **Expo Go** app, or
 - Press **“Run on Android/iOS Emulator”** in the terminal to test locally.
 
+### Troubleshooting
+
+If Expo Go won’t load on your laptop:
+Run npm install
+Run npm install expo
+
+make sure your tsconfig looks like 
+
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "jsx": "react-native",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
+  }
+}
+
+If still have  connectivity issues: 
+
+Start Expo using:
+Fully close Expo Go and npx expo start --tunnel
+
 ---
 
 ## 🔒 Authentication Logic
