@@ -77,7 +77,6 @@ export default function LoginScreen() {
             Whirl App
           </Text>
 
-          {/* Subtitle */}
           <Text
             style={{
               color: '#000',
@@ -92,7 +91,6 @@ export default function LoginScreen() {
             Log in to your Account
           </Text>
 
-          {/* Form card */}
           <View
             style={{
               width: '85%',
@@ -104,7 +102,6 @@ export default function LoginScreen() {
               gap: 12,
             }}
           >
-            {/* Email */}
             <Text style={{ fontSize: 16, fontWeight: '400' }}>Email</Text>
             <TextInput
               placeholder="Email"
@@ -122,7 +119,6 @@ export default function LoginScreen() {
               placeholderTextColor="#B3B3B3"
             />
 
-            {/* Password */}
             <Text style={{ fontSize: 16, fontWeight: '400' }}>Password</Text>
             <TextInput
               placeholder="Password"
@@ -139,12 +135,10 @@ export default function LoginScreen() {
               placeholderTextColor="#B3B3B3"
             />
 
-            {/* Error message */}
             {error ? (
               <Text style={{ color: 'red', textAlign: 'center', marginBottom: 6 }}>{error}</Text>
             ) : null}
 
-            {/* Login button */}
             <Pressable
               onPress={handleLogin}
               disabled={loading}
@@ -164,7 +158,6 @@ export default function LoginScreen() {
               </Text>
             </Pressable>
 
-            {/* Click here to Sign-Up */}
             <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
               <Text
                 style={{
@@ -196,7 +189,6 @@ export default function LoginScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Bottom tiger image */}
       <View
         pointerEvents="none"
         style={{
@@ -204,7 +196,7 @@ export default function LoginScreen() {
           left: 0,
           right: 0,
           bottom: 0,
-          height: H * 0.23, // smaller, fits like your figma
+          height: H * 0.23, 
           overflow: 'hidden',
         }}
       >
@@ -217,7 +209,7 @@ export default function LoginScreen() {
             right: 0,
             width: '100%',
             height: '100%',
-            resizeMode: 'contain', // keeps full tiger visible
+            resizeMode: 'contain', 
           }}
         />
       </View>

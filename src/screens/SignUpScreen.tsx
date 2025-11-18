@@ -53,7 +53,6 @@ export default function SignUpScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* Keep inputs above keyboard nicely on iOS */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -64,11 +63,10 @@ export default function SignUpScreen() {
           contentContainerStyle={{
             alignItems: 'center',
             paddingTop: 80,
-            paddingBottom: H * 0.3, // space above tiger
+            paddingBottom: H * 0.3, 
           }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Title */}
           <Text
             style={{
               color: '#000',
@@ -83,7 +81,6 @@ export default function SignUpScreen() {
             Whirl App
           </Text>
 
-          {/* Subtitle */}
           <Text
             style={{
               color: '#000',
@@ -98,7 +95,6 @@ export default function SignUpScreen() {
             Create your Account
           </Text>
 
-          {/* Form card */}
           <View
             style={{
               width: '85%',
@@ -162,7 +158,6 @@ export default function SignUpScreen() {
               placeholderTextColor="#B3B3B3"
             />
 
-            {/* Error message */}
             {error ? (
               <Text style={{ color: 'red', textAlign: 'center', marginBottom: 6 }}>{error}</Text>
             ) : null}
@@ -219,7 +214,6 @@ export default function SignUpScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Bottom tiger image (solid version, no transparency) */}
       <View
         pointerEvents="none"
         style={{
@@ -227,7 +221,7 @@ export default function SignUpScreen() {
           left: 0,
           right: 0,
           bottom: 0,
-          height: H * 0.22, // how tall the tiger area is
+          height: H * 0.22, 
           overflow: 'hidden',
         }}
       >
@@ -240,7 +234,7 @@ export default function SignUpScreen() {
             right: 0,
             width: '100%',
             height: '100%',
-            resizeMode: 'cover', // fills the entire width like your Figma
+            resizeMode: 'cover', 
           }}
         />
       </View>

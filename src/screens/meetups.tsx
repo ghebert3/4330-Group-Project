@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, FlatList } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, FlatList, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import FadeInView from '../components/FadeInView';
 
 const { width } = Dimensions.get('window');
 
@@ -19,11 +20,10 @@ const COLORS = {
 function TopDecor() {
   return (
     <View style={stylesHeader.wrap}>
-    <Text style={stylesHeader.title}>MEETUPS</Text>
+      <Text style={stylesHeader.title}>MEETUPS</Text>
 
-      {/* purple gradient moon */}
       <LinearGradient
-        colors={[COLORS.purpleDark, COLORS.purple, 'rgba(255,255,255,0.85)']}
+        colors={[COLORS.purpleDark, COLORS.purple, 'rgba(255, 255, 255, 0.85)']}
         locations={[0, 0.6, 1]}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 1 }}
@@ -48,12 +48,6 @@ function PuffyHeaderCloud({ style }: { style?: object }) {
   );
 }
 
-//Cloud Varients
-const pickVariant = (index: number): 0 | 1 | 2 | 3 => {
-  const n = Math.abs(Math.floor(Math.sin((index + 1) * 9301) * 1000));
-  return (n % 4) as 0 | 1 | 2 | 3;
-};
-
 function CloudItem({
   alignRight = false,
   idx = 0,
@@ -61,32 +55,26 @@ function CloudItem({
   alignRight?: boolean;
   idx?: number;
 }) {
-  const cardWidth = Math.min(width * 0.55, 200); // base width
-
+  const cardWidth = Math.min(width * 0.55, 200);
   const v = idx % 3;
-
   let baseH = 58;
   let shadow = { bottom: -4, left: 14.8, widthPct: 0.92, height: 18, opacity: 1 };
   let center = { top: -26, wPct: 0.48, h: 70, radius: 90 };
   let left = { top: -12, left: 12, wPct: 0.28, h: 48, radius: 50 };
   let right = { top: -10, right: 12, wPct: 0.28, h: 46, radius: 50 };
-
   if (v === 1) {
-    // Variant 1 
     baseH = 50;
-    shadow = { bottom: -4.5, left: 8, widthPct: .95, height: 19, opacity: 0.9 };
-    center = { top: -24, wPct: 0.60, h: 60, radius: 80 };
-    left = { top: -10, left: 6, wPct: 0.30, h: 42, radius: 42 };
-    right = { top: -9, right: 6, wPct: 0.30, h: 40, radius: 40 };
+    shadow = { bottom: -4.5, left: 8, widthPct: 0.95, height: 19, opacity: 0.9 };
+    center = { top: -24, wPct: 0.6, h: 60, radius: 80 };
+    left = { top: -10, left: 6, wPct: 0.3, h: 42, radius: 42 };
+    right = { top: -9, right: 6, wPct: 0.3, h: 40, radius: 40 };
   } else if (v === 2) {
-    // Variant 2
     baseH = 42;
-  shadow = { bottom: -4, left: 15, widthPct: 0.90, height: 14, opacity: 0.8 };
-  center = { top: -22, wPct: 0.42, h: 48, radius: 70 };
-  left = { top: -10, left: 12, wPct: 0.26, h: 36, radius: 40 };
-  right = { top: -10, right: 12, wPct: 0.26, h: 36, radius: 40 };
+    shadow = { bottom: -4, left: 15, widthPct: 0.9, height: 14, opacity: 0.8 };
+    center = { top: -22, wPct: 0.42, h: 48, radius: 70 };
+    left = { top: -10, left: 12, wPct: 0.26, h: 36, radius: 40 };
+    right = { top: -10, right: 12, wPct: 0.26, h: 36, radius: 40 };
   }
-
   return (
     <View
       style={[
@@ -94,7 +82,6 @@ function CloudItem({
         { width: cardWidth, alignSelf: alignRight ? 'flex-end' : 'flex-start' },
       ]}
     >
-      {/* shadow under cloud */}
       <View
         style={{
           position: 'absolute',
@@ -109,7 +96,6 @@ function CloudItem({
         }}
       />
 
-      
       <View
         style={{
           width: '100%',
@@ -169,11 +155,6 @@ function CloudItem({
 }
 
 
-
-
-
-// SCREEN 
-
 export default function MeetupsScreen() {
   const INITIAL_COUNT = 20;
   const [items, setItems] = useState<number[]>(
@@ -192,32 +173,47 @@ export default function MeetupsScreen() {
   const ItemSep = useMemo(() => <View style={{ height: 18 }} />, []);
 
   return (
-    <SafeAreaView style={styles.root}>
-      <TopDecor />
+    <FadeInView>
+      <SafeAreaView style={styles.root}>
+        <TopDecor />
 
-      <FlatList
-        contentContainerStyle={styles.listContent}
-        data={items}
-        keyExtractor={keyExtractor}
-        ItemSeparatorComponent={() => ItemSep}
-        renderItem={({ index }) => (<CloudItem
-       alignRight={index % 2 === 1}
-       idx={index}
-  />
-)}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        showsVerticalScrollIndicator={false}
-      />
-    </SafeAreaView>
+        <FlatList
+          contentContainerStyle={styles.listContent}
+          data={items}
+          keyExtractor={keyExtractor}
+          ItemSeparatorComponent={() => ItemSep}
+          renderItem={({ index }) => (
+            <CloudItem alignRight={index % 2 === 1} idx={index} />
+          )}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          showsVerticalScrollIndicator={false}
+        />
+
+        <Image
+          source={require('../../assets/footer.png')} 
+          style={styles.footer}
+          resizeMode="stretch"
+        />
+      </SafeAreaView>
+    </FadeInView>
   );
 }
 
-// STYLES 
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
-  listContent: { paddingHorizontal: 30, paddingBottom: 32, paddingTop: 25 },
+  listContent: { paddingHorizontal: 35, paddingBottom: 100, paddingTop: 25 },
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: 120,     
+    zIndex: 5,
+    pointerEvents: 'none', 
+  },
 });
 
 const stylesHeader = StyleSheet.create({
@@ -229,9 +225,9 @@ const stylesHeader = StyleSheet.create({
   },
   title: {
     fontSize: 36,
-    fontWeight: '800',
     letterSpacing: 2,
     color: COLORS.purpleDark,
+    fontFamily: 'FodaDisplay',
   },
   moon: {
     position: 'absolute',
@@ -248,7 +244,7 @@ const stylesHeaderCloud = StyleSheet.create({
   wrap: {
     position: 'absolute',
     width: 150,
-    height: 62,
+    height: 35,
     zIndex: 2,
   },
   shadow: {
@@ -289,20 +285,18 @@ const stylesCloud = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   shadowPlate: {
     position: 'absolute',
     bottom: -4,
     left: 10,
     width: '92%',
     height: 18,
-    backgroundColor: '#D9C6FF', 
+    backgroundColor: '#D9C6FF',
     borderRadius: 20,
     alignSelf: 'center',
     opacity: 1,
     zIndex: 0,
   },
-
   cloudBase: {
     width: '100%',
     height: 58,
@@ -316,7 +310,6 @@ const stylesCloud = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     zIndex: 2,
   },
-
   topPuffLarge: {
     position: 'absolute',
     top: -26,
@@ -326,7 +319,6 @@ const stylesCloud = StyleSheet.create({
     borderRadius: 90,
     zIndex: 3,
   },
-
   topPuffSmallLeft: {
     position: 'absolute',
     top: -12,
@@ -337,7 +329,6 @@ const stylesCloud = StyleSheet.create({
     borderRadius: 50,
     zIndex: 3,
   },
-
   topPuffSmallRight: {
     position: 'absolute',
     top: -10,

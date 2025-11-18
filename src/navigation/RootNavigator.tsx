@@ -15,8 +15,6 @@ import MeetupsScreen from '../screens/meetups';
 
 const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
-
-// Tab Nav
 function AppTabs() {
   return (
     <Tabs.Navigator
@@ -44,7 +42,6 @@ function AppTabs() {
               iconName = focused ? 'person-circle' : 'person-circle-outline';
               break;
           }
-
           return <Ionicons name={iconName} size={size} color={focused ? '#5903C3' : color} />;
         },
         tabBarActiveTintColor: '#5903C3',
@@ -59,8 +56,6 @@ function AppTabs() {
     </Tabs.Navigator>
   );
 }
-
-//  Root Nav
 export default function RootNavigator() {
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
@@ -92,7 +87,7 @@ export default function RootNavigator() {
       {isAuthed ? (
         <AppTabs />
       ) : (
-        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="SignUp">
+        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }} initialRouteName="SignUp">
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="SignUp" component={SignUpScreen} />
         </Stack.Navigator>

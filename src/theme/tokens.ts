@@ -9,7 +9,7 @@ export const colors = {
   black: '#000000',
 };
 
-export const spacing = (n = 1) => 8 * n; // 8-pt grid
+export const spacing = (n = 1) => 8 * n; 
 export const radii = { sm: 8, md: 8, lg: 12 };
 export const type = {
   label:   { fontSize: 16, lineHeight: 22.4, fontWeight: '400' as const },
