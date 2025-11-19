@@ -12,11 +12,11 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { AuthStackParamList } from '../navigation/types';
+import type { RootStackParamList } from '../navigation/types';
 import { supabase } from '../lib/supabase';
-import tiger from '../../assets/tiger.png'; // same tiger image
+import tiger from '../../assets/logos/tiger.png'; // same tiger image
 
-type LoginNav = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
+type LoginNav = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 export default function LoginScreen() {
   const navigation = useNavigation<LoginNav>();
