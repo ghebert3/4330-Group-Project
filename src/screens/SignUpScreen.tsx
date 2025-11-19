@@ -14,7 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../navigation/types';
 import { supabase } from '../lib/supabase';
-import tiger from '../../assets/tiger.png'; // ✅ solid tiger image
+import tiger from '../../assets/logos/tiger.png';
 
 type SignUpNav = NativeStackNavigationProp<AuthStackParamList, 'SignUp'>;
 

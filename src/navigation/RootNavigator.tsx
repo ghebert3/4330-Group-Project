@@ -1,21 +1,20 @@
-import { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../lib/supabase';
-import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
+import type { RootStackParamList, AppTabParamList } from '../navigation/types';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import HomeScreen from '../screens/HomeScreen';
+import StartupScreen from '../screens/StartupScreen';
 
-const Stack = createNativeStackNavigator();
-const Tabs = createBottomTabNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tabs = createBottomTabNavigator<AppTabParamList>();
 
-// Tab Nav
+// Bottom Tab Navigator for the main app
 function AppTabs() {
   return (
     <Tabs.Navigator
@@ -44,12 +43,19 @@ function AppTabs() {
               break;
           }
 
-          return <Ionicons name={iconName} size={size} color={focused ? '#5903C3' : color} />;
+          return (
+            <Ionicons
+              name={iconName}
+              size={size}
+              color={focused ? '#5903C3' : color}
+            />
+          );
         },
         tabBarActiveTintColor: '#5903C3',
         tabBarInactiveTintColor: '#777',
       })}
     >
+      {/* Replace HomeScreen with real screens as your team builds them */}
       <Tabs.Screen name="Home" component={HomeScreen} />
       <Tabs.Screen name="Search" component={HomeScreen} />
       <Tabs.Screen name="Discover" component={HomeScreen} />
@@ -59,43 +65,24 @@ function AppTabs() {
   );
 }
 
-//  Root Nav
+// Root stack navigator
 export default function RootNavigator() {
-  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
-      setIsAuthed(!!data.session);
-    });
-
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      (_event: AuthChangeEvent, session: Session | null) => {
-        setIsAuthed(!!session);
-      }
-    );
-
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
-  if (isAuthed === null) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator />
-        <Text style={{ marginTop: 8 }}>Loading…</Text>
-      </View>
-    );
-  }
-
   return (
     <NavigationContainer>
-      {isAuthed ? (
-        <AppTabs />
-      ) : (
-        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="SignUp">
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="SignUp" component={SignUpScreen} />
-        </Stack.Navigator>
-      )}
+      <Stack.Navigator
+        screenOptions={{ headerShown: false }}
+        initialRouteName="Startup"
+      >
+        {/* Animated startup / splash screen */}
+        <Stack.Screen name="Startup" component={StartupScreen} />
+
+        {/* Auth flow */}
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} />
+
+        {/* Main app (tabs) */}
+        <Stack.Screen name="AppTabs" component={AppTabs} />
+      </Stack.Navigator>
     </NavigationContainer>
   );
 }

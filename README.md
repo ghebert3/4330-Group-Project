@@ -78,7 +78,7 @@ The app architecture supports onboarding, discovery, posting, swiping, event cre
 ---
 
 ## 🗂️ Project Structure
-
+```
 4330-Group-Project/
 │
 ├── App.tsx
@@ -99,7 +99,7 @@ The app architecture supports onboarding, discovery, posting, swiping, event cre
 ├── tsconfig.json
 ├── app.json
 └── README.md
-
+```
 ---
 
 ## ⚙️ Setup & Run (Development)

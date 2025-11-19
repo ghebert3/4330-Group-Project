@@ -12,11 +12,11 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { AuthStackParamList } from '../navigation/types';
+import type { RootStackParamList } from '../navigation/types';
 import { supabase } from '../lib/supabase';
-import tiger from '../../assets/tiger.png'; // same tiger image
+import tiger from '../../assets/logos/tiger.png'; // same tiger image
 
-type LoginNav = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
+type LoginNav = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 export default function LoginScreen() {
   const navigation = useNavigation<LoginNav>();
@@ -27,7 +27,7 @@ export default function LoginScreen() {
 
   const H = Dimensions.get('window').height;
 
-  async function handleLogin() {
+    async function handleLogin() {
     setError('');
     if (!email || !password) {
       setError('Email and password are required');
@@ -38,8 +38,14 @@ export default function LoginScreen() {
       setLoading(true);
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      // TODO: navigate to Feed or Home after login
+
       console.log('Login successful');
+
+      // gfter successful login, go to the main tab navigator
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'AppTabs' }],
+      });
     } catch (e: any) {
       setError(e.message ?? 'Login failed');
     } finally {
