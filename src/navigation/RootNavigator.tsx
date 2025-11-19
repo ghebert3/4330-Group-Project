@@ -10,6 +10,7 @@ import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import HomeScreen from '../screens/HomeScreen';
 import StartupScreen from '../screens/StartupScreen';
+import RestartScreen from '../screens/RestartScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tabs = createBottomTabNavigator<AppTabParamList>();
@@ -79,6 +80,7 @@ export default function RootNavigator() {
         {/* Auth flow */}
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
+        <Stack.Screen name="Restart" component={RestartScreen} />
 
         {/* Main app (tabs) */}
         <Stack.Screen name="AppTabs" component={AppTabs} />

@@ -161,26 +161,30 @@ export default function LoginScreen() {
                 marginBottom: 20,
               }}
             >
-              <Text style={{ color: '#F5F5F5', fontSize: 16, fontWeight: '400' }}>
+              <Text style={{ color: '#F5F5F5', fontSize: 16, fontWeight: '600' }}>
                 {loading ? 'Loading…' : 'Login'}
               </Text>
             </Pressable>
 
             {/* Link to Sign Up */}
-            <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-              <Text style={{ color: 'black', fontSize: 16 }}>Click here to</Text>
+            <View style={{ position: 'absolute', bottom: 15, right: 20 }}>
               <Pressable onPress={() => navigation.navigate('SignUp')}>
                 <Text
-                  style={{
-                    color: '#551A8B',
-                    fontSize: 16,
-                    marginLeft: 4,
-                  }}
-                >
-                  Sign-Up
+                  style={{ color: '#551A8B', fontSize: 13 }}>
+                  Create new account
                 </Text>
               </Pressable>
             </View>
+
+            <View style={{ position: 'absolute', bottom: 15, left: 20 }}>
+              <Pressable onPress={() => navigation.navigate('Restart')}>
+                <Text
+                  style={{ color: '#551A8B', fontSize: 13, }}>
+                  Forgot Password?
+                </Text>
+              </Pressable>
+            </View>
+          
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
