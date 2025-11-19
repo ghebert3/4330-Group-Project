@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { AuthStackParamList } from '../navigation/types';
+import type { RootStackParamList } from '../navigation/types';
 import { supabase } from '../lib/supabase';
-import tiger from '../../assets/logos/tiger.png';
 
-type SignUpNav = NativeStackNavigationProp<AuthStackParamList, 'SignUp'>;
+import tiger from '../../assets/logos/tiger.png';
+import whirlLogo from '../../assets/logos/tornado-whirl-logo-transparent.png';
+
+type SignUpNav = NativeStackNavigationProp<RootStackParamList, 'SignUp'>;
 
 export default function SignUpScreen() {
   const navigation = useNavigation<SignUpNav>();
@@ -30,8 +32,9 @@ export default function SignUpScreen() {
 
   async function handleSignUp() {
     setError('');
-    if (!email || !password) {
-      setError('Email and password are required');
+
+    if (!email || !password || !confirm) {
+      setError('All fields are required');
       return;
     }
     if (password !== confirm) {
@@ -43,6 +46,8 @@ export default function SignUpScreen() {
       setLoading(true);
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
+
+      // After successful sign up, send them to Login
       navigation.navigate('Login');
     } catch (e: any) {
       setError(e.message ?? 'Sign up failed');
@@ -52,45 +57,40 @@ export default function SignUpScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* Keep inputs above keyboard nicely on iOS */}
+    <View style={{ flex: 1, backgroundColor: '#461D7C' }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* Main scroll area */}
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{
             alignItems: 'center',
-            paddingTop: 80,
-            paddingBottom: H * 0.3, // space above tiger
+            paddingTop: 10,
+            paddingBottom: H * 0.38,
           }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Title */}
-          <Text
+          {/* Whirl Logo */}
+          <Image
+            source={whirlLogo}
             style={{
-              color: '#000',
-              fontSize: 48,
-              fontFamily: 'Inter',
-              fontWeight: '700',
-              lineHeight: 58,
-              textAlign: 'center',
-              marginBottom: 8,
+              width: '100%',
+              height: undefined,
+              aspectRatio: 1.6,
+              resizeMode: 'contain',
+              marginBottom: -90,
+              marginTop: 5,
             }}
-          >
-            Whirl App
-          </Text>
+          />
 
           {/* Subtitle */}
           <Text
             style={{
-              color: '#000',
+              color: 'white',
               fontSize: 23,
               fontFamily: 'Inter',
               fontWeight: '400',
-              lineHeight: 32,
               textAlign: 'center',
               marginBottom: 40,
             }}
@@ -102,7 +102,7 @@ export default function SignUpScreen() {
           <View
             style={{
               width: '85%',
-              backgroundColor: '#fff',
+              backgroundColor: 'white',
               borderRadius: 8,
               borderWidth: 1,
               borderColor: '#D9D9D9',
@@ -148,7 +148,7 @@ export default function SignUpScreen() {
             {/* Confirm Password */}
             <Text style={{ fontSize: 16, fontWeight: '400' }}>Confirm Password</Text>
             <TextInput
-              placeholder="Password"
+              placeholder="Confirm Password"
               secureTextEntry
               value={confirm}
               onChangeText={setConfirm}
@@ -164,10 +164,18 @@ export default function SignUpScreen() {
 
             {/* Error message */}
             {error ? (
-              <Text style={{ color: 'red', textAlign: 'center', marginBottom: 6 }}>{error}</Text>
+              <Text
+                style={{
+                  color: 'red',
+                  textAlign: 'center',
+                  marginBottom: 6,
+                }}
+              >
+                {error}
+              </Text>
             ) : null}
 
-            {/* Sign Up button */}
+            {/* Sign Up Button */}
             <Pressable
               onPress={handleSignUp}
               disabled={loading}
@@ -183,35 +191,24 @@ export default function SignUpScreen() {
               }}
             >
               <Text style={{ color: '#F5F5F5', fontSize: 16, fontWeight: '400' }}>
-                {loading ? 'Loading…' : 'Sign Up'}
+                {loading ? 'Creating Account…' : 'Sign Up'}
               </Text>
             </Pressable>
 
-            {/* Click here to Login */}
+            {/* Link to Login */}
             <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-              <Text
-                style={{
-                  color: 'black',
-                  fontSize: 16,
-                  fontFamily: 'Inter',
-                  fontWeight: '400',
-                  lineHeight: 16,
-                }}
-              >
-                Click here to
+              <Text style={{ color: 'black', fontSize: 16 }}>
+                Already have an account?
               </Text>
               <Pressable onPress={() => navigation.navigate('Login')}>
                 <Text
                   style={{
                     color: '#551A8B',
                     fontSize: 16,
-                    fontFamily: 'Inter',
-                    fontWeight: '400',
-                    lineHeight: 16,
                     marginLeft: 4,
                   }}
                 >
-                  Login
+                  Log in
                 </Text>
               </Pressable>
             </View>
@@ -219,7 +216,7 @@ export default function SignUpScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Bottom tiger image (solid version, no transparency) */}
+      {/* Tiger at bottom */}
       <View
         pointerEvents="none"
         style={{
@@ -227,7 +224,7 @@ export default function SignUpScreen() {
           left: 0,
           right: 0,
           bottom: 0,
-          height: H * 0.22, // how tall the tiger area is
+          height: H * 0.23,
           overflow: 'hidden',
         }}
       >
@@ -236,11 +233,9 @@ export default function SignUpScreen() {
           style={{
             position: 'absolute',
             bottom: 0,
-            left: 0,
-            right: 0,
             width: '100%',
             height: '100%',
-            resizeMode: 'cover', // fills the entire width like your Figma
+            resizeMode: 'contain',
           }}
         />
       </View>

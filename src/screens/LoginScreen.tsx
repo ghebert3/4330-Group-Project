@@ -14,7 +14,9 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { supabase } from '../lib/supabase';
-import tiger from '../../assets/logos/tiger.png'; // same tiger image
+
+import tiger from '../../assets/logos/tiger.png';
+import whirlLogo from '../../assets/logos/tornado-whirl-logo-transparent.png'; // <-- YOUR TRANSPARENT LOGO
 
 type LoginNav = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -27,7 +29,7 @@ export default function LoginScreen() {
 
   const H = Dimensions.get('window').height;
 
-    async function handleLogin() {
+  async function handleLogin() {
     setError('');
     if (!email || !password) {
       setError('Email and password are required');
@@ -39,13 +41,7 @@ export default function LoginScreen() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      console.log('Login successful');
-
-      // gfter successful login, go to the main tab navigator
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'AppTabs' }],
-      });
+      navigation.replace('AppTabs');
     } catch (e: any) {
       setError(e.message ?? 'Login failed');
     } finally {
@@ -54,7 +50,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View style={{ flex: 1, backgroundColor: '#461D7C' }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -63,34 +59,32 @@ export default function LoginScreen() {
           style={{ flex: 1 }}
           contentContainerStyle={{
             alignItems: 'center',
-            paddingTop: 80,
-            paddingBottom: H * 0.3,
+            paddingTop: 10,
+            paddingBottom: H * 0.38,
           }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Title */}
-          <Text
+
+          {/* LOGO HERE */}
+          <Image
+            source={whirlLogo}
             style={{
-              color: '#000',
-              fontSize: 48,
-              fontFamily: 'Inter',
-              fontWeight: '700',
-              lineHeight: 58,
-              textAlign: 'center',
-              marginBottom: 8,
+              width: '100%',
+              height: undefined,
+              aspectRatio: 1.6,
+              resizeMode: 'contain',
+              marginBottom: -90,
+              marginTop: 5,
             }}
-          >
-            Whirl App
-          </Text>
+          />
 
           {/* Subtitle */}
           <Text
             style={{
-              color: '#000',
+              color: 'white',
               fontSize: 23,
               fontFamily: 'Inter',
               fontWeight: '400',
-              lineHeight: 32,
               textAlign: 'center',
               marginBottom: 40,
             }}
@@ -102,7 +96,7 @@ export default function LoginScreen() {
           <View
             style={{
               width: '85%',
-              backgroundColor: '#fff',
+              backgroundColor: 'white',
               borderRadius: 8,
               borderWidth: 1,
               borderColor: '#D9D9D9',
@@ -145,12 +139,14 @@ export default function LoginScreen() {
               placeholderTextColor="#B3B3B3"
             />
 
-            {/* Error message */}
+            {/* Error */}
             {error ? (
-              <Text style={{ color: 'red', textAlign: 'center', marginBottom: 6 }}>{error}</Text>
+              <Text style={{ color: 'red', textAlign: 'center', marginBottom: 6 }}>
+                {error}
+              </Text>
             ) : null}
 
-            {/* Login button */}
+            {/* Login Button */}
             <Pressable
               onPress={handleLogin}
               disabled={loading}
@@ -170,27 +166,14 @@ export default function LoginScreen() {
               </Text>
             </Pressable>
 
-            {/* Click here to Sign-Up */}
+            {/* Link to Sign Up */}
             <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-              <Text
-                style={{
-                  color: 'black',
-                  fontSize: 16,
-                  fontFamily: 'Inter',
-                  fontWeight: '400',
-                  lineHeight: 16,
-                }}
-              >
-                Click here to
-              </Text>
+              <Text style={{ color: 'black', fontSize: 16 }}>Click here to</Text>
               <Pressable onPress={() => navigation.navigate('SignUp')}>
                 <Text
                   style={{
                     color: '#551A8B',
                     fontSize: 16,
-                    fontFamily: 'Inter',
-                    fontWeight: '400',
-                    lineHeight: 16,
                     marginLeft: 4,
                   }}
                 >
@@ -202,7 +185,7 @@ export default function LoginScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Bottom tiger image */}
+      {/* TIGER BOTTOM */}
       <View
         pointerEvents="none"
         style={{
@@ -210,7 +193,7 @@ export default function LoginScreen() {
           left: 0,
           right: 0,
           bottom: 0,
-          height: H * 0.23, // smaller, fits like your figma
+          height: H * 0.23,
           overflow: 'hidden',
         }}
       >
@@ -219,11 +202,9 @@ export default function LoginScreen() {
           style={{
             position: 'absolute',
             bottom: 0,
-            left: 0,
-            right: 0,
             width: '100%',
             height: '100%',
-            resizeMode: 'contain', // keeps full tiger visible
+            resizeMode: 'contain',
           }}
         />
       </View>
