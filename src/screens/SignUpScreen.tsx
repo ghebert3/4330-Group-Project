@@ -190,21 +190,21 @@ export default function SignUpScreen() {
                 marginBottom: 20,
               }}
             >
-              <Text style={{ color: '#F5F5F5', fontSize: 16, fontWeight: '400' }}>
+              <Text style={{ color: '#F5F5F5', fontSize: 16, fontWeight: '600' }}>
                 {loading ? 'Creating Account…' : 'Sign Up'}
               </Text>
             </Pressable>
 
             {/* Link to Login */}
             <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-              <Text style={{ color: 'black', fontSize: 16 }}>
-                Already have an account?
+              <Text style={{ color: 'black', fontSize: 15 }}>
+                Have an account?
               </Text>
               <Pressable onPress={() => navigation.navigate('Login')}>
                 <Text
                   style={{
                     color: '#551A8B',
-                    fontSize: 16,
+                    fontSize: 15,
                     marginLeft: 4,
                   }}
                 >

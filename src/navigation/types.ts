@@ -2,6 +2,7 @@ export type RootStackParamList = {
   Startup: undefined;
   Login: undefined;
   SignUp: undefined;
+  Restart: undefined;
   AppTabs: undefined;
 };
 
