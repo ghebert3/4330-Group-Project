@@ -27,7 +27,7 @@ export default function LoginScreen() {
 
   const H = Dimensions.get('window').height;
 
-  async function handleLogin() {
+    async function handleLogin() {
     setError('');
     if (!email || !password) {
       setError('Email and password are required');
@@ -38,8 +38,14 @@ export default function LoginScreen() {
       setLoading(true);
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      // TODO: navigate to Feed or Home after login
+
       console.log('Login successful');
+
+      // gfter successful login, go to the main tab navigator
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'AppTabs' }],
+      });
     } catch (e: any) {
       setError(e.message ?? 'Login failed');
     } finally {
