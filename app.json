@@ -9,6 +9,7 @@
 
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "whirl",
 
     "splash": {
       "image": "./assets/logos/splash-icon.png",
@@ -21,10 +22,23 @@
     },
 
     "android": {
+      "package": "whirl://reset-password",
       "adaptiveIcon": {
         "foregroundImage": "./assets/logos/adaptive-icon.png",
         "backgroundColor": "#461D7C"
       },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            {
+              "scheme": "whirl"
+            }
+          ]
+        }
+      ]
+    },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -37,4 +51,3 @@
       "expo-font"
     ]
   }
-}

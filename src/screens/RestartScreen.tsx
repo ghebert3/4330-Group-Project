@@ -1,3 +1,5 @@
+const PASSWORD_RESET_URL = 'https://joinwhirl.fun/reset-password';
+
 import React, { useState } from 'react';
 import {
   View,
@@ -15,56 +17,63 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { supabase } from '../lib/supabase';
+import * as Linking from 'expo-linking';
 
 import tiger from '../../assets/logos/tiger.png';
-import whirlLogo from '../../assets/logos/tornado-whirl-logo-transparent.png'; // <-- YOUR TRANSPARENT LOGO
+import whirlLogo from '../../assets/logos/tornado-whirl-logo-transparent.png';
 
-type RestartNav = NativeStackNavigationProp<RootStackParamList, 'Restart'>;
+type RestartScreenNavProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'Restart'
+>;
 
-export default function LoginScreen() {
-  const navigation = useNavigation<RestartNav>();
+const { width, height } = Dimensions.get('window');
+const H = height;
+const LSU_PURPLE = '#461D7C';
+
+export default function RestartScreen() {
+  const navigation = useNavigation<RestartScreenNavProp>();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
 
-  const H = Dimensions.get('window').height;
+async function handleRestart() {
+  setError('');
 
-  async function handleRestart() {
-    setError('');
-
-    if (!email) {
-      setError('Email is required');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail( email, {
-        // this is for the Supabase reset password link
-        // redirect to: "https://whirl-app.com/reset-password"
-      });
-
-      if (error) throw error;
-
-      Alert.alert(
-        'Check your email',
-        'We sent a link to reset your password.'
-      );
-
-      //after sending, send user back to login screen
-      navigation.navigate('Login');
-    } catch (e: any) {
-        setError(e.message ?? 'Failed to send reset email');
-    } finally {
-        setLoading(false);
-    }
+  if (!email) {
+    setError('Email is required');
+    return;
   }
 
+  try {
+    setLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: PASSWORD_RESET_URL,
+    });
+
+    if (error) throw error;
+
+    Alert.alert(
+      'Check your email',
+      'We sent a link to reset your password.'
+    );
+
+    // After sending, send user back to login screen
+    navigation.navigate('Login');
+  } catch (e: any) {
+    setError(e.message ?? 'Something went wrong. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+}
+
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#461D7C' }}>
+    <View style={{ flex: 1, backgroundColor: LSU_PURPLE }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}    // change this to android
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined} // keep layout matching other pages
       >
         <ScrollView
           style={{ flex: 1 }}
@@ -75,7 +84,6 @@ export default function LoginScreen() {
           }}
           keyboardShouldPersistTaps="handled"
         >
-
           {/* LOGO HERE */}
           <Image
             source={whirlLogo}
@@ -135,7 +143,13 @@ export default function LoginScreen() {
 
             {/* Error */}
             {error ? (
-              <Text style={{ color: 'red', textAlign: 'center', marginBottom: 6 }}>
+              <Text
+                style={{
+                  color: 'red',
+                  textAlign: 'center',
+                  marginBottom: 6,
+                }}
+              >
                 {error}
               </Text>
             ) : null}
@@ -154,19 +168,25 @@ export default function LoginScreen() {
                 marginTop: 8,
               }}
             >
-              <Text style={{ color: '#F5F5F5', fontSize: 16, fontWeight: '600' }}>
+              <Text
+                style={{
+                  color: '#F5F5F5',
+                  fontSize: 16,
+                  fontWeight: '600',
+                }}
+              >
                 {loading ? 'Loading…' : 'Reset Password'}
               </Text>
             </Pressable>
 
             {/* Back to Login */}
             <Pressable
-                onPress={() => navigation.navigate('Login')}
-                style={{ marginTop: 16, alignSelf: 'center' }}
+              onPress={() => navigation.navigate('Login')}
+              style={{ marginTop: 16, alignSelf: 'center' }}
             >
-                <Text style={{ color: '#551A8B', fontSize: 13 }}>
-                    Back to Login
-                </Text>
+              <Text style={{ color: '#551A8B', fontSize: 13 }}>
+                Back to Login
+              </Text>
             </Pressable>
           </View>
         </ScrollView>
