@@ -78,7 +78,6 @@ export default function LoginScreen() {
             }}
           />
 
-          {/* Subtitle */}
           <Text
             style={{
               color: 'white',
@@ -92,7 +91,6 @@ export default function LoginScreen() {
             Log in to your Account
           </Text>
 
-          {/* Form card */}
           <View
             style={{
               width: '85%',
@@ -104,7 +102,6 @@ export default function LoginScreen() {
               gap: 12,
             }}
           >
-            {/* Email */}
             <Text style={{ fontSize: 16, fontWeight: '400' }}>Email</Text>
             <TextInput
               placeholder="Email"
@@ -122,7 +119,6 @@ export default function LoginScreen() {
               placeholderTextColor="#B3B3B3"
             />
 
-            {/* Password */}
             <Text style={{ fontSize: 16, fontWeight: '400' }}>Password</Text>
             <TextInput
               placeholder="Password"

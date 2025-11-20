@@ -7,6 +7,7 @@ import { navigationRef } from './src/navigation/navigationRef';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
+    FodaDisplay: require('./assets/Fonts/Foda_Display.ttf'),
     CherryBomb: require('./assets/fonts/CherryBombFont.ttf'),
   });
 

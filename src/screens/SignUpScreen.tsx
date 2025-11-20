@@ -93,7 +93,6 @@ export default function SignUpScreen() {
             }}
           />
 
-          {/* Subtitle */}
           <Text
             style={{
               color: 'white',
@@ -107,7 +106,6 @@ export default function SignUpScreen() {
             Create your Account
           </Text>
 
-          {/* Form card */}
           <View
             style={{
               width: '85%',
@@ -171,7 +169,6 @@ export default function SignUpScreen() {
               placeholderTextColor="#B3B3B3"
             />
 
-            {/* Error message */}
             {error ? (
               <Text
                 style={{
