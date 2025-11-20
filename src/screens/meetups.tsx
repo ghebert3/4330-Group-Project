@@ -1,8 +1,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, FlatList, Image } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity, Image, Modal, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import FadeInView from '../components/FadeInView';
+
 
 const { width } = Dimensions.get('window');
 
@@ -15,6 +16,19 @@ const COLORS = {
   cloud: '#F2A51A',
   cloudShadowPlate: '#D9C6FF',
 };
+
+type Meetup = {
+  id: string;
+  title: string;
+  capacity: number;
+  currentCount: number;
+};
+
+const INITIAL_MEETUPS: Meetup[] = [
+  { id: '1', title: 'Boba Run @ UREC', capacity: 8, currentCount: 2 },
+  { id: '2', title: '4330 Study Group', capacity: 10, currentCount: 4 },
+  { id: '3', title: 'Late Night Tennis', capacity: 6, currentCount: 1 },
+];
 
 
 function TopDecor() {
@@ -48,20 +62,117 @@ function PuffyHeaderCloud({ style }: { style?: object }) {
   );
 }
 
+function CreateCloudButton({ onPress }: { onPress: () => void }) {
+  const cardWidth = Math.min(width * 0.7, 260);
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={onPress}
+      style={[
+        stylesCloud.wrap,
+        { width: cardWidth, alignSelf: 'center', marginBottom: 26 },
+      ]}
+    >
+      <View
+        style={{
+          position: 'absolute',
+          bottom: -6,
+          left: 12,
+          width: '90%',
+          height: 22,
+          backgroundColor: COLORS.cloudShadowPlate,
+          borderRadius: 25,
+          opacity: 1,
+          zIndex: 0,
+        }}
+      />
+
+      <View
+        style={{
+          width: '100%',
+          height: 67,
+          backgroundColor: COLORS.cloud,
+          borderRadius: 36,
+          borderBottomLeftRadius: 40,
+          borderBottomRightRadius: 30,
+          shadowColor: '#000',
+          shadowOpacity: 0.05,
+          shadowRadius: 3,
+          shadowOffset: { width: 0, height: 2 },
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 3,
+        }}
+      >
+        <Text style={stylesCloud.createText}> Create Meetup</Text>
+      </View>
+
+      <View
+        style={{
+          position: 'absolute',
+          top: -30,
+          width: '45%',
+          height: 55,
+          alignSelf: 'center',
+          backgroundColor: COLORS.cloud,
+          borderRadius: 60,
+          zIndex: 2,
+        }}
+      />
+
+      <View
+        style={{
+          position: 'absolute',
+          top: -18,
+          left: 20,
+          width: '28%',
+          height: 45,
+          backgroundColor: COLORS.cloud,
+          borderRadius: 50,
+          zIndex: 2,
+        }}
+      />
+
+      <View
+        style={{
+          position: 'absolute',
+          top: -18,
+          right: 20,
+          width: '28%',
+          height: 45,
+          backgroundColor: COLORS.cloud,
+          borderRadius: 50,
+          zIndex: 2,
+        }}
+      />
+    </TouchableOpacity>
+  );
+}
+
+
+
 function CloudItem({
+  meetup,
   alignRight = false,
   idx = 0,
+  onPress,
 }: {
+  meetup: Meetup;
   alignRight?: boolean;
   idx?: number;
+  onPress: () => void;
 }) {
+
   const cardWidth = Math.min(width * 0.55, 200);
   const v = idx % 3;
+
   let baseH = 58;
   let shadow = { bottom: -4, left: 14.8, widthPct: 0.92, height: 18, opacity: 1 };
   let center = { top: -26, wPct: 0.48, h: 70, radius: 90 };
   let left = { top: -12, left: 12, wPct: 0.28, h: 48, radius: 50 };
   let right = { top: -10, right: 12, wPct: 0.28, h: 46, radius: 50 };
+
   if (v === 1) {
     baseH = 50;
     shadow = { bottom: -4.5, left: 8, widthPct: 0.95, height: 19, opacity: 0.9 };
@@ -75,8 +186,11 @@ function CloudItem({
     left = { top: -10, left: 12, wPct: 0.26, h: 36, radius: 40 };
     right = { top: -10, right: 12, wPct: 0.26, h: 36, radius: 40 };
   }
+
   return (
-    <View
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
       style={[
         stylesCloud.wrap,
         { width: cardWidth, alignSelf: alignRight ? 'flex-end' : 'flex-start' },
@@ -95,6 +209,7 @@ function CloudItem({
           zIndex: 0,
         }}
       />
+
 
       <View
         style={{
@@ -150,71 +265,235 @@ function CloudItem({
           zIndex: 3,
         }}
       />
-    </View>
+
+      <View style={stylesCloud.labelWrap}>
+        <Text style={stylesCloud.labelTitle} numberOfLines={1}>
+          {meetup.title}
+        </Text>
+        <Text style={stylesCloud.labelCapacity}>
+          {meetup.currentCount}/{meetup.capacity}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
 
+
 export default function MeetupsScreen() {
-  const INITIAL_COUNT = 20;
-  const [items, setItems] = useState<number[]>(
-    Array.from({ length: INITIAL_COUNT }, (_, i) => i)
-  );
+  const [meetups, setMeetups] = useState<Meetup[]>(INITIAL_MEETUPS);
 
-  const loadMore = useCallback(() => {
-    setItems(prev => {
-      const start = prev.length;
-      const more = Array.from({ length: 20 }, (_, i) => start + i);
-      return prev.concat(more);
-    });
-  }, []);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newCapacity, setNewCapacity] = useState('10');
 
-  const keyExtractor = useCallback((n: number) => String(n), []);
   const ItemSep = useMemo(() => <View style={{ height: 18 }} />, []);
 
-  return (
-    <FadeInView>
-      <SafeAreaView style={styles.root}>
-        <TopDecor />
+  const handleCreatePress = () => {
+    setNewTitle('');
+    setNewCapacity('10');
+    setCreateOpen(true);
+  };
 
-        <FlatList
-          contentContainerStyle={styles.listContent}
-          data={items}
-          keyExtractor={keyExtractor}
-          ItemSeparatorComponent={() => ItemSep}
-          renderItem={({ index }) => (
-            <CloudItem alignRight={index % 2 === 1} idx={index} />
-          )}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.5}
-          showsVerticalScrollIndicator={false}
-        />
+  const handleSubmitCreate = () => {
+    const trimmed = newTitle.trim();
+    const cap = parseInt(newCapacity, 10);
 
+    if (!trimmed) {
+      Alert.alert('Name your meetup', 'Give your meetup a short title.');
+      return;
+    }
+    if (isNaN(cap) || cap <= 0) {
+      Alert.alert('Invalid capacity', 'Capacity must be a positive number.');
+      return;
+    }
+
+    const newMeetup: Meetup = {
+      id: Date.now().toString(),
+      title: trimmed,
+      capacity: cap,
+      currentCount: 0,
+    };
+
+    setMeetups(prev => [newMeetup, ...prev]);
+    setCreateOpen(false);
+  };
+
+  const handleJoin = (id: string) => {
+    setMeetups(prev =>
+      prev.map(m => {
+        if (m.id !== id) return m;
+        if (m.currentCount >= m.capacity) {
+          Alert.alert('Lobby full', 'This meetup is already at capacity.');
+          return m;
+        }
+        return { ...m, currentCount: m.currentCount + 1 };
+      })
+    );
+  };
+
+ return (
+   <FadeInView>
+    <SafeAreaView style={styles.root}>
+      <TopDecor />
+
+      <FlatList
+  contentContainerStyle={styles.listContent}
+  data={meetups}
+  keyExtractor={m => m.id}
+  ItemSeparatorComponent={() => ItemSep}
+  ListHeaderComponent={<CreateCloudButton onPress={handleCreatePress} />}
+  renderItem={({ item, index }) => (
+    <CloudItem
+      meetup={item}
+      alignRight={index % 2 === 1}
+      idx={index}
+      onPress={() => handleJoin(item.id)}
+    />
+  )}
+  showsVerticalScrollIndicator={false}
+/>
+
+        {/* footer image */}
         <Image
-          source={require('../../assets/footer.png')} 
+          source={require('../../assets/footer.png')}
           style={styles.footer}
           resizeMode="stretch"
         />
+
+        {/* Create Meetup Modal */}
+        <Modal
+          visible={createOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setCreateOpen(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <Text style={styles.modalTitle}>Create Meetup</Text>
+
+              <Text style={styles.modalLabel}>Meetup name</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="ex: Boba run, 4330 study group…"
+                placeholderTextColor="#888"
+                value={newTitle}
+                onChangeText={setNewTitle}
+              />
+
+              <Text style={styles.modalLabel}>Max people</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="10"
+                placeholderTextColor="#888"
+                keyboardType="number-pad"
+                value={newCapacity}
+                onChangeText={setNewCapacity}
+              />
+
+              <View style={styles.modalButtonsRow}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalCancel]}
+                  onPress={() => setCreateOpen(false)}
+                >
+                  <Text style={styles.modalButtonText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalCreate]}
+                  onPress={handleSubmitCreate}
+                >
+                  <Text style={styles.modalButtonText}>Create</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </FadeInView>
   );
 }
 
 
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.bg },
   listContent: { paddingHorizontal: 35, paddingBottom: 100, paddingTop: 25 },
+
   footer: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
     width: '100%',
-    height: 120,     
+    height: 120,
     zIndex: 5,
-    pointerEvents: 'none', 
+    pointerEvents: 'none',
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCard: {
+    width: '84%',
+    backgroundColor: '#FFF7E8',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 24,
+    marginBottom: 10,
+    color: COLORS.purpleDark,
+    fontFamily: 'CherryBombOne', 
+  },
+  modalLabel: {
+    fontSize: 14,
+    marginTop: 8,
+    marginBottom: 4,
+    color: '#444',
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#E0C9A8',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: 'white',
+    fontSize: 14,
+  },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 16,
+  },
+  modalButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    marginLeft: 8,
+  },
+  modalCancel: {
+    backgroundColor: '#E0D0C0',
+  },
+  modalCreate: {
+    backgroundColor: COLORS.purple,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
+
 
 const stylesHeader = StyleSheet.create({
   wrap: {
@@ -338,5 +617,51 @@ const stylesCloud = StyleSheet.create({
     backgroundColor: '#F2A51A',
     borderRadius: 50,
     zIndex: 3,
+  },
+  createText: {
+    fontSize: 25,
+    fontFamily: 'CherryBombOne',
+    color: '#181818ff',
+    letterSpacing: 1,
+    marginTop: -10,
+  },
+  textWrap: {
+    position: 'absolute',
+    top: 8,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  meetupTitle: {
+    fontSize: 15,
+    fontFamily: 'CherryBombOne',
+    color: '#181818',
+  },
+  meetupCount: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#3A2A0A',
+  },
+    labelWrap: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    zIndex: 10,         
+    alignItems: 'center',
+  },
+  labelTitle: {
+    fontSize: 14,
+    color: '#181818',
+    textAlign: 'center',
+    fontFamily: 'CherryBombOne',
+  },
+  labelCapacity: {
+    marginTop: 2,
+    fontSize: 12,
+    color: '#4a3b3b',
+    fontFamily: 'CherryBombOne',
+
   },
 });

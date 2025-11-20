@@ -14,7 +14,7 @@ export default function FadeInView({
   style,
 }: FadeInViewProps) {
   const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.97)).current; // start slightly smaller
+  const scale = useRef(new Animated.Value(0.97)).current; 
 
   useEffect(() => {
     Animated.parallel([
