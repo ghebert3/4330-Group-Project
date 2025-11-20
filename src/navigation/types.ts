@@ -16,6 +16,6 @@ export type AppTabParamList = {
   Home: undefined;
   Search: undefined;
   Discover: undefined;
-  Alerts: undefined;
+  Meetups: undefined;
   Profile: undefined;
 };

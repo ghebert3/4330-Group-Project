@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { navigationRef } from '../navigation/navigationRef';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import MeetupsScreen from '../screens/meetups';
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 
@@ -43,14 +44,15 @@ const linking = {
       Restart: 'restart',
       ChangePassword: 'reset-password',
       AppTabs: {
-        screens: {
-          Home: 'home',
-          Search: 'search',
-          Discover: 'discover',
-          Alerts: 'alerts',
-          Profile: 'profile',
-        },
-      },
+      screens: {
+       Home: 'home',
+       Search: 'search',
+       Discover: 'discover',
+        Meetups: 'meetups',
+        Profile: 'profile',
+     },
+    },
+
     },
   },
 };
@@ -60,26 +62,50 @@ function AppTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: LSU_PURPLE,
-        tabBarInactiveTintColor: '#999',
-        tabBarShowLabel: true,
-        tabBarIcon: ({ color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap = 'home';
+        tabBarShowLabel: false,
+        tabBarStyle: { borderTopWidth: 1, borderTopColor: '#ddd' },
+        tabBarIcon: ({ color, size, focused }) => {
+          let iconName: keyof typeof Ionicons.glyphMap = 'home-outline';
 
-          if (route.name === 'Home') iconName = 'home-outline';
-          if (route.name === 'Search') iconName = 'search-outline';
-          if (route.name === 'Discover') iconName = 'compass-outline';
-          if (route.name === 'Alerts') iconName = 'notifications-outline';
-          if (route.name === 'Profile') iconName = 'person-circle-outline';
+          switch (route.name) {
+            case 'Home':
+              iconName = focused ? 'home' : 'home-outline';
+              break;
+            case 'Search':
+              iconName = focused ? 'search' : 'search-outline';
+              break;
+            case 'Discover':
+              iconName = focused ? 'add-circle' : 'add-circle-outline';
+              break;
+            case 'Meetups':
+              iconName = focused ? 'cloud' : 'cloud-outline';
+              break;
+            case 'Profile':
+              iconName = focused ? 'person-circle' : 'person-circle-outline';
+              break;
+          }
 
-          return <Ionicons name={iconName} size={size} color={color} />;
+          return (
+            <Ionicons
+              name={iconName}
+              size={size}
+              color={focused ? LSU_PURPLE : color}
+            />
+          );
         },
+        tabBarActiveTintColor: LSU_PURPLE,
+        tabBarInactiveTintColor: '#777',
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Search" component={HomeScreen} />
+      <Tab.Screen name="Discover" component={HomeScreen} />
+      <Tab.Screen name="Meetups" component={MeetupsScreen} />
+      <Tab.Screen name="Profile" component={HomeScreen} />
     </Tab.Navigator>
   );
 }
+
 
 export default function RootNavigator() {
   return (
