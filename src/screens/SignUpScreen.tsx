@@ -1,3 +1,5 @@
+const EMAIL_CONFIRM_URL = 'https://joinwhirl.fun/auth/confirm';
+
 import React, { useState } from 'react';
 import {
   View,
@@ -43,8 +45,15 @@ export default function SignUpScreen() {
     }
 
     try {
-      setLoading(true);
-      const { error } = await supabase.auth.signUp({ email, password });
+    setLoading(true);
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: EMAIL_CONFIRM_URL,
+      },
+    });
       if (error) throw error;
 
       // After successful sign up, send them to Login
