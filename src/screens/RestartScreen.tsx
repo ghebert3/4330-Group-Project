@@ -1,4 +1,4 @@
-const PASSWORD_RESET_URL = 'https://joinwhirl.fun/reset-password';
+const PASSWORD_RESET_URL = 'https://joinwhirl.fun/reset';
 
 import React, { useState } from 'react';
 import {
