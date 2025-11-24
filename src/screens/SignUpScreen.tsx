@@ -26,6 +26,7 @@ export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
+  
   const H = Dimensions.get('window').height;
 
   async function handleSignUp() {
