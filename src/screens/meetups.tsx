@@ -983,6 +983,7 @@ const stylesHeader = StyleSheet.create({
   title: {
     fontSize: 36,
     letterSpacing: 2,
+    right: 6,
     color: COLORS.purpleDark,
     fontFamily: 'FodaDisplay',
   },
