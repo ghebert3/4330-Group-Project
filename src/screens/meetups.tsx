@@ -2,6 +2,8 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity, Image, Modal, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import FadeInView from '../components/FadeInView';
 
 
@@ -22,13 +24,37 @@ type Meetup = {
   title: string;
   capacity: number;
   currentCount: number;
+  location: string;
+  description: string;
 };
 
 const INITIAL_MEETUPS: Meetup[] = [
-  { id: '1', title: 'Boba Run @ UREC', capacity: 8, currentCount: 2 },
-  { id: '2', title: '4330 Study Group', capacity: 10, currentCount: 4 },
-  { id: '3', title: 'Late Night Tennis', capacity: 6, currentCount: 1 },
+  {
+    id: '1',
+    title: 'Boba Run @ UREC',
+    capacity: 8,
+    currentCount: 2,
+    location: 'LSU UREC Entrance',
+    description: 'Quick boba run after workouts, all majors welcome!',
+  },
+  {
+    id: '2',
+    title: '4330 Study Group',
+    capacity: 10,
+    currentCount: 4,
+    location: 'Patrick F. Taylor, 3rd floor',
+    description: 'Review project specs and past exams for 4330.',
+  },
+  {
+    id: '3',
+    title: 'Late Night Tennis',
+    capacity: 6,
+    currentCount: 1,
+    location: 'LSU Tennis Courts',
+    description: 'Chill late-night rally, all skill levels.',
+  },
 ];
+
 
 
 function TopDecor() {
@@ -278,46 +304,133 @@ function CloudItem({
   );
 }
 
-
-
 export default function MeetupsScreen() {
   const [meetups, setMeetups] = useState<Meetup[]>(INITIAL_MEETUPS);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newCapacity, setNewCapacity] = useState('10');
+  const [newLocation, setNewLocation] = useState('');
+  const [newDescription, setNewDescription] = useState('');
 
   const ItemSep = useMemo(() => <View style={{ height: 18 }} />, []);
+
+  // ⬇️⬇️⬇️ ADD THIS RIGHT HERE ⬇️⬇️⬇️
+  useEffect(() => {
+    const loadMeetups = async () => {
+      const { data, error } = await supabase
+        .from('meetups')
+        .select('id, name, description, location, max_capacity, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading meetups', error);
+        return;
+      }
+
+      if (!data || data.length === 0) return;
+
+      const mapped: Meetup[] = data.map(row => ({
+        id: String(row.id),
+        title: row.name,
+        description: row.description,
+        location: row.location,
+        capacity: row.max_capacity,
+        currentCount: 0,
+      }));
+
+      setMeetups(mapped);
+    };
+
+    loadMeetups();
+  }, []);
+  // ⬆️⬆️⬆️ END OF INSERT ⬆️⬆️⬆️
 
   const handleCreatePress = () => {
     setNewTitle('');
     setNewCapacity('10');
+    setNewLocation('');
+    setNewDescription('');
     setCreateOpen(true);
   };
 
-  const handleSubmitCreate = () => {
-    const trimmed = newTitle.trim();
-    const cap = parseInt(newCapacity, 10);
 
-    if (!trimmed) {
-      Alert.alert('Name your meetup', 'Give your meetup a short title.');
+  const handleSubmitCreate = async () => {
+  const trimmedTitle = newTitle.trim();
+  const trimmedLocation = newLocation.trim();
+  const trimmedDescription = newDescription.trim();
+  const cap = parseInt(newCapacity, 10);
+
+  if (!trimmedTitle) {
+    Alert.alert('Name your meetup', 'Give your meetup a short title.');
+    return;
+  }
+
+  if (!trimmedLocation) {
+    Alert.alert('Add a location', 'Please enter where this meetup will happen.');
+    return;
+  }
+
+  if (!trimmedDescription) {
+    Alert.alert('Add a description', 'Tell people what this meetup is about.');
+    return;
+  }
+
+  if (isNaN(cap) || cap <= 0) {
+    Alert.alert('Invalid capacity', 'Capacity must be a positive number.');
+    return;
+  }
+
+  try {
+    // 1) get current user for host id
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      console.error(userError);
+      Alert.alert('Not signed in', 'You must be logged in to create a meetup.');
       return;
     }
-    if (isNaN(cap) || cap <= 0) {
-      Alert.alert('Invalid capacity', 'Capacity must be a positive number.');
+
+    // 2) insert into meetups with .select() to get the created row back
+    const { data, error } = await supabase
+      .from('meetups')
+      .insert({
+        host: user.id,
+        name: trimmedTitle,
+        description: trimmedDescription,
+        location: trimmedLocation,
+        max_capacity: cap,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating meetup', error);
+      Alert.alert('Error', 'Could not create meetup. Please try again.');
       return;
     }
 
-    const newMeetup: Meetup = {
-      id: Date.now().toString(),
-      title: trimmed,
-      capacity: cap,
+    // 3) map DB row → our Meetup type and add to state
+    const created: Meetup = {
+      id: String(data.id),
+      title: data.name,
+      description: data.description,
+      location: data.location,
+      capacity: data.max_capacity,
       currentCount: 0,
     };
 
-    setMeetups(prev => [newMeetup, ...prev]);
+    setMeetups(prev => [created, ...prev]);
     setCreateOpen(false);
-  };
+  } catch (e) {
+    console.error(e);
+    Alert.alert('Error', 'Something went wrong. Please try again.');
+  }
+};
+
 
   const handleJoin = (id: string) => {
     setMeetups(prev =>
@@ -373,23 +486,42 @@ export default function MeetupsScreen() {
               <Text style={styles.modalTitle}>Create Meetup</Text>
 
               <Text style={styles.modalLabel}>Meetup name</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="ex: Boba run, 4330 study group…"
-                placeholderTextColor="#888"
-                value={newTitle}
-                onChangeText={setNewTitle}
-              />
+<TextInput
+  style={styles.modalInput}
+  placeholder="ex: Boba run, 4330 study group…"
+  placeholderTextColor="#888"
+  value={newTitle}
+  onChangeText={setNewTitle}
+/>
 
-              <Text style={styles.modalLabel}>Max people</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="10"
-                placeholderTextColor="#888"
-                keyboardType="number-pad"
-                value={newCapacity}
-                onChangeText={setNewCapacity}
-              />
+<Text style={styles.modalLabel}>Location</Text>
+<TextInput
+  style={styles.modalInput}
+  placeholder="ex: UREC entrance, PFT 3rd floor…"
+  placeholderTextColor="#888"
+  value={newLocation}
+  onChangeText={setNewLocation}
+/>
+
+<Text style={styles.modalLabel}>Description</Text>
+<TextInput
+  style={[styles.modalInput, { height: 80 }]}
+  placeholder="What is this meetup about?"
+  placeholderTextColor="#888"
+  value={newDescription}
+  onChangeText={setNewDescription}
+  multiline
+/>
+
+<Text style={styles.modalLabel}>Max people</Text>
+<TextInput
+  style={styles.modalInput}
+  placeholder="10"
+  placeholderTextColor="#888"
+  keyboardType="number-pad"
+  value={newCapacity}
+  onChangeText={setNewCapacity}
+/>
 
               <View style={styles.modalButtonsRow}>
                 <TouchableOpacity
