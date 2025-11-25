@@ -26,32 +26,50 @@ type Meetup = {
   currentCount: number;
   location: string;
   description: string;
+  joined: boolean;
+  startsAt: string;
+  host: string; 
+  participantEmails: string[]; 
+
 };
+
 
 const INITIAL_MEETUPS: Meetup[] = [
   {
-    id: '1',
+    id: 'demo-1',
     title: 'Boba Run @ UREC',
     capacity: 8,
     currentCount: 2,
     location: 'LSU UREC Entrance',
     description: 'Quick boba run after workouts, all majors welcome!',
+    joined: false,
+    startsAt: new Date().toISOString(),
+    host: '',               
+    participantEmails: [],    
   },
   {
-    id: '2',
+    id: 'demo-2',
     title: '4330 Study Group',
     capacity: 10,
     currentCount: 4,
     location: 'Patrick F. Taylor, 3rd floor',
     description: 'Review project specs and past exams for 4330.',
+    joined: false,
+    startsAt: new Date().toISOString(),
+    host: '',
+    participantEmails: [],
   },
   {
-    id: '3',
+    id: 'demo-3',
     title: 'Late Night Tennis',
     capacity: 6,
     currentCount: 1,
     location: 'LSU Tennis Courts',
     description: 'Chill late-night rally, all skill levels.',
+    joined: false,
+    startsAt: new Date().toISOString(),
+    host: '',
+    participantEmails: [],
   },
 ];
 
@@ -304,6 +322,41 @@ function CloudItem({
   );
 }
 
+function convertTo24h(timeStr: string): string | null {
+  const t = timeStr.trim().toUpperCase();
+
+  const match = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+  if (!match) return null;
+
+  let [, hh, mm, period] = match;
+  let hour = parseInt(hh, 10);
+
+  if (period === 'PM' && hour !== 12) hour += 12;
+  if (period === 'AM' && hour === 12) hour = 0;
+
+  const hh24 = hour.toString().padStart(2, '0');
+  return `${hh24}:${mm}`;
+}
+
+function isValidDateYMD(dateStr: string): boolean {
+  const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return false;
+
+  const [_, y, mo, d] = m;
+  const year = Number(y);
+  const month = Number(mo);
+  const day = Number(d);
+
+  const dt = new Date(dateStr + 'T00:00:00');
+  return (
+    !isNaN(dt.getTime()) &&
+    dt.getUTCFullYear() === year &&
+    dt.getUTCMonth() + 1 === month &&
+    dt.getUTCDate() === day
+  );
+}
+
+
 export default function MeetupsScreen() {
   const [meetups, setMeetups] = useState<Meetup[]>(INITIAL_MEETUPS);
 
@@ -312,53 +365,153 @@ export default function MeetupsScreen() {
   const [newCapacity, setNewCapacity] = useState('10');
   const [newLocation, setNewLocation] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [participants, setParticipants] = useState<{ id: string; email: string }[]>([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
+
+
+  const [newDate, setNewDate] = useState('');
+  const [newTime, setNewTime] = useState('');
+
+  const [detailsOpen, setDetailsOpen] = useState(false);     
+  const [selectedMeetup, setSelectedMeetup] = useState<Meetup | null>(null); 
 
   const ItemSep = useMemo(() => <View style={{ height: 18 }} />, []);
 
-  // ⬇️⬇️⬇️ ADD THIS RIGHT HERE ⬇️⬇️⬇️
   useEffect(() => {
-    const loadMeetups = async () => {
-      const { data, error } = await supabase
-        .from('meetups')
-        .select('id, name, description, location, max_capacity, created_at')
-        .order('created_at', { ascending: false });
+  const loadMeetups = async () => {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-      if (error) {
-        console.error('Error loading meetups', error);
-        return;
-      }
+    if (userError) {
+      console.error('Error getting user', userError);
+      return;
+    }
+    if (!user) return;
 
-      if (!data || data.length === 0) return;
+    setCurrentUserId(user.id);
 
-      const mapped: Meetup[] = data.map(row => ({
+    const nowIso = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('meetups')
+      .select(`
+        id,
+        host,
+        name,
+        description,
+        location,
+        max_capacity,
+        starts_at,
+        meetup_participants (
+          user_id,
+          profiles ( email )
+        )
+      `)
+      .gte('starts_at', nowIso)
+      .order('starts_at', { ascending: true });
+
+    if (error) {
+      console.error('Error loading meetups:', error);
+      return;
+    }
+
+    if (!data) {
+      setMeetups([]);
+      return;
+    }
+
+    const mapped: Meetup[] = data.map((row: any) => {
+      const participants = row.meetup_participants ?? [];
+
+      return {
         id: String(row.id),
         title: row.name,
         description: row.description,
         location: row.location,
         capacity: row.max_capacity,
-        currentCount: 0,
-      }));
+        currentCount: participants.length,
+        joined: participants.some((p: any) => p.user_id === user.id),
+        startsAt: row.starts_at,
+        host: row.host,
+        participantEmails: participants.map((p: any) => p.profiles?.email ?? ''),
+      };
+    });
 
-      setMeetups(mapped);
-    };
+    setMeetups(mapped);
+  };
 
-    loadMeetups();
-  }, []);
-  // ⬆️⬆️⬆️ END OF INSERT ⬆️⬆️⬆️
+  loadMeetups();
+}, []);
 
   const handleCreatePress = () => {
-    setNewTitle('');
-    setNewCapacity('10');
-    setNewLocation('');
-    setNewDescription('');
-    setCreateOpen(true);
+     setNewTitle('');
+     setNewCapacity('10');
+     setNewLocation('');
+     setNewDescription('');
+     setNewDate('');
+     setNewTime('');
+     setCreateOpen(true);
   };
+
+    const openDetails = async (meetup: Meetup) => {
+  setSelectedMeetup(meetup);
+  setDetailsOpen(true);
+  setParticipants([]);
+  setLoadingParticipants(false);
+
+  if (!currentUserId || currentUserId !== meetup.host) return;
+
+  try {
+    setLoadingParticipants(true);
+
+    const { data: rows, error: partErr } = await supabase
+      .from('meetup_participants')
+      .select('user_id')
+      .eq('meetup_id', Number(meetup.id));
+
+    if (partErr) {
+      console.error('Error loading participants', partErr);
+      return;
+    }
+
+    if (!rows || rows.length === 0) {
+      setParticipants([]);
+      return;
+    }
+
+    const userIds = rows.map(r => r.user_id);
+
+    const { data: profs, error: profErr } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .in('id', userIds);
+
+    if (profErr) {
+      console.error('Error loading participant emails', profErr);
+      return;
+    }
+
+    const mapped = (profs ?? []).map(p => ({
+      id: p.id as string,
+      email: p.email as string,
+    }));
+
+    setParticipants(mapped);
+  } finally {
+    setLoadingParticipants(false);
+  }
+};
 
 
   const handleSubmitCreate = async () => {
   const trimmedTitle = newTitle.trim();
   const trimmedLocation = newLocation.trim();
   const trimmedDescription = newDescription.trim();
+  const dateTrimmed = newDate.trim();
+  const timeTrimmed = newTime.trim();
   const cap = parseInt(newCapacity, 10);
 
   if (!trimmedTitle) {
@@ -376,13 +529,45 @@ export default function MeetupsScreen() {
     return;
   }
 
+  if (!dateTrimmed || !timeTrimmed) {
+    Alert.alert('Add a date & time', 'Please fill in both date and time.');
+    return;
+  }
+
+  if (!isValidDateYMD(dateTrimmed)) {
+    Alert.alert(
+      'Invalid date',
+      'Please use date format YYYY-MM-DD (for example: 2025-11-30).'
+    );
+    return;
+  }
+
+  const time24 = convertTo24h(timeTrimmed);
+  if (!time24) {
+    Alert.alert(
+      'Invalid time',
+      'Please use time format like "6:30 PM" or "11:05 AM".'
+    );
+    return;
+  }
+
   if (isNaN(cap) || cap <= 0) {
     Alert.alert('Invalid capacity', 'Capacity must be a positive number.');
     return;
   }
 
+  const isoCandidate = `${dateTrimmed}T${time24}:00`;
+  const parsed = new Date(isoCandidate);
+
+  if (isNaN(parsed.getTime())) {
+    console.log('Bad isoCandidate:', isoCandidate);
+    Alert.alert('Invalid date/time', 'Please double-check your date and time.');
+    return;
+  }
+
+  const startsAtIso = parsed.toISOString();
+
   try {
-    // 1) get current user for host id
     const {
       data: { user },
       error: userError,
@@ -394,7 +579,6 @@ export default function MeetupsScreen() {
       return;
     }
 
-    // 2) insert into meetups with .select() to get the created row back
     const { data, error } = await supabase
       .from('meetups')
       .insert({
@@ -403,6 +587,7 @@ export default function MeetupsScreen() {
         description: trimmedDescription,
         location: trimmedLocation,
         max_capacity: cap,
+        starts_at: startsAtIso,
       })
       .select()
       .single();
@@ -413,7 +598,6 @@ export default function MeetupsScreen() {
       return;
     }
 
-    // 3) map DB row → our Meetup type and add to state
     const created: Meetup = {
       id: String(data.id),
       title: data.name,
@@ -421,6 +605,10 @@ export default function MeetupsScreen() {
       location: data.location,
       capacity: data.max_capacity,
       currentCount: 0,
+      joined: false,
+      startsAt: data.starts_at,
+        host: data.host,           
+        participantEmails: [],   
     };
 
     setMeetups(prev => [created, ...prev]);
@@ -432,18 +620,80 @@ export default function MeetupsScreen() {
 };
 
 
-  const handleJoin = (id: string) => {
-    setMeetups(prev =>
-      prev.map(m => {
-        if (m.id !== id) return m;
-        if (m.currentCount >= m.capacity) {
-          Alert.alert('Lobby full', 'This meetup is already at capacity.');
-          return m;
-        }
-        return { ...m, currentCount: m.currentCount + 1 };
-      })
-    );
+
+  const handleJoinFromDetails = () => {
+    if (!selectedMeetup) return;
+    handleJoin(selectedMeetup.id);
+    setDetailsOpen(false);
   };
+
+  const handleJoin = async (id: string) => {
+  if (!currentUserId) {
+    Alert.alert('Not signed in', 'You must be logged in to join.');
+    return;
+  }
+
+  const target = meetups.find(m => m.id === id);
+  if (!target) return;
+
+  const numericId = Number(id); 
+
+  try {
+    if (target.joined) {
+      const { error } = await supabase
+        .from('meetup_participants')
+        .delete()
+        .eq('meetup_id', numericId)
+        .eq('user_id', currentUserId);
+
+      if (error) {
+        console.error('Error leaving meetup', error);
+        Alert.alert('Error', 'Could not leave meetup.');
+        return;
+      }
+
+      setMeetups(prev =>
+        prev.map(m =>
+          m.id === id
+            ? {
+                ...m,
+                joined: false,
+                currentCount: Math.max(0, m.currentCount - 1),
+              }
+            : m
+        )
+      );
+    } else {
+      if (target.currentCount >= target.capacity) {
+        Alert.alert('Lobby full', 'This meetup is already at capacity.');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('meetup_participants')
+        .insert({ meetup_id: numericId, user_id: currentUserId });
+
+      if (error) {
+        console.error('Error joining meetup', error);
+        Alert.alert('Error', 'Could not join meetup.');
+        return;
+      }
+
+      setMeetups(prev =>
+        prev.map(m =>
+          m.id === id
+            ? { ...m, joined: true, currentCount: m.currentCount + 1 }
+            : m
+        )
+      );
+    }
+  } catch (e) {
+    console.error(e);
+    Alert.alert('Error', 'Something went wrong. Please try again.');
+  }
+};
+
+
 
  return (
    <FadeInView>
@@ -461,7 +711,7 @@ export default function MeetupsScreen() {
       meetup={item}
       alignRight={index % 2 === 1}
       idx={index}
-      onPress={() => handleJoin(item.id)}
+      onPress={() => openDetails(item)}
     />
   )}
   showsVerticalScrollIndicator={false}
@@ -513,6 +763,26 @@ export default function MeetupsScreen() {
   multiline
 />
 
+<Text style={styles.modalLabel}>Date (YYYY-MM-DD)</Text>
+<TextInput
+  style={styles.modalInput}
+  placeholder="2025-11-30"
+  placeholderTextColor="#888"
+  value={newDate}
+  onChangeText={setNewDate}
+/>
+
+<Text style={styles.modalLabel}>Time (HH:MM AM/PM)</Text>
+<TextInput
+  style={styles.modalInput}
+  placeholder="6:30 PM"
+  placeholderTextColor="#888"
+  value={newTime}
+  onChangeText={setNewTime}
+/>
+
+
+
 <Text style={styles.modalLabel}>Max people</Text>
 <TextInput
   style={styles.modalInput}
@@ -541,6 +811,76 @@ export default function MeetupsScreen() {
             </View>
           </View>
         </Modal>
+        {/* Meetup Details Modal */}
+<Modal
+  visible={detailsOpen}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setDetailsOpen(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalCard}>
+      {selectedMeetup && (
+        <>
+          <Text style={styles.modalTitle}>{selectedMeetup.title}</Text>
+
+          <Text style={styles.modalLabel}>Location</Text>
+          <Text style={styles.detailText}>{selectedMeetup.location}</Text>
+
+          <Text style={styles.modalLabel}>Description</Text>
+          <Text style={styles.detailText}>{selectedMeetup.description}</Text>
+
+          <Text style={styles.modalLabel}>When</Text>
+          <Text style={styles.detailText}>
+              {new Date(selectedMeetup.startsAt).toLocaleString()}
+          </Text>
+          <Text style={styles.modalLabel}>Spots</Text>
+          <Text style={styles.detailText}>
+             {selectedMeetup.currentCount}/{selectedMeetup.capacity} people
+            {selectedMeetup.joined ? ' (You joined)' : ''}
+          </Text>
+          
+          {currentUserId === selectedMeetup.host && (
+  <>
+              <Text style={styles.modalLabel}>Participants (emails)</Text>
+               {loadingParticipants && (
+               <Text style={styles.detailText}>Loading…</Text>
+                )}
+                {!loadingParticipants && participants.length === 0 && (
+                  <Text style={styles.detailText}>Nobody has joined yet.</Text>
+                )}
+                {!loadingParticipants &&
+                 participants.map(p => (
+                 <Text key={p.id} style={styles.detailText}>
+                • {p.email}
+                  </Text>
+                ))}
+              </>
+            )}
+
+          <View style={styles.modalButtonsRow}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalCancel]}
+              onPress={() => setDetailsOpen(false)}
+            >
+              <Text style={styles.modalButtonText}>Close</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+            style={[styles.modalButton, styles.modalCreate]}
+            onPress={handleJoinFromDetails}
+              >
+             <Text style={styles.modalButtonText}>
+               {selectedMeetup.joined ? 'Leave' : 'Join'}
+               </Text>
+</TouchableOpacity>
+          </View>
+        </>
+      )}
+    </View>
+  </View>
+</Modal>
+
       </SafeAreaView>
     </FadeInView>
   );
@@ -587,7 +927,7 @@ const styles = StyleSheet.create({
     color: COLORS.purpleDark,
     fontFamily: 'CherryBombOne', 
   },
-  modalLabel: {
+    modalLabel: {
     fontSize: 14,
     marginTop: 8,
     marginBottom: 4,
@@ -602,6 +942,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     fontSize: 14,
   },
+  detailText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 6,
+  },
+
   modalButtonsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
