@@ -20,5 +20,5 @@ export default function App() {
     return null;
   }
 
-  return <DiscoverScreen />;
+  return <RootNavigator />;
 }
