@@ -44,6 +44,17 @@ create table if not exists public.profiles (
   created_at timestamptz default now()
 );
 
+-- MEETUPS
+create table if not exists public.meetups (
+  id bigserial primary key,
+  host uuid references public.profiles(id) on delete cascade,
+  name text not null,
+  description text not null,
+  location text not null,
+  max_capacity integer not null,
+  created_at timestamptz default now()
+);
+
 -- extra columns for Kanban features (safe to run multiple times)
 alter table public.profiles
   add column if not exists username text unique,
@@ -158,8 +169,10 @@ alter table public.swipes         enable row level security;
 alter table public.matches        enable row level security;
 alter table public.follows        enable row level security;
 alter table public.events         enable row level security;
+alter table public.meetups        enable row level security;
 alter table public.reports        enable row level security;
 alter table public.user_interests enable row level security;
+
 
 
 -- 5. ROW-LEVEL SECURITY POLICIES
@@ -325,6 +338,32 @@ with check (auth.uid() = host);
 create policy "events delete host"
 on public.events for delete
 using (auth.uid() = host);
+
+-- ---------- MEETUPS ----------
+drop policy if exists "meetups read all"    on public.meetups;
+drop policy if exists "meetups insert host" on public.meetups;
+drop policy if exists "meetups update host" on public.meetups;
+drop policy if exists "meetups delete host" on public.meetups;
+
+-- everyone can see meetups
+create policy "meetups read all"
+on public.meetups for select
+using (true);
+
+-- host manages their own meetups
+create policy "meetups insert host"
+on public.meetups for insert
+with check (auth.uid() = host);
+
+create policy "meetups update host"
+on public.meetups for update
+using (auth.uid() = host)
+with check (auth.uid() = host);
+
+create policy "meetups delete host"
+on public.meetups for delete
+using (auth.uid() = host);
+
 
 
 -- ---------- REPORTS ----------

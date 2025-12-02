@@ -4,6 +4,7 @@ export type RootStackParamList = {
   SignUp: undefined;
   Restart: undefined;
   AppTabs: undefined;
+  ChangePassword: undefined;
 };
 
 export type AuthStackParamList = {
@@ -15,6 +16,6 @@ export type AppTabParamList = {
   Home: undefined;
   Search: undefined;
   Discover: undefined;
-  Alerts: undefined;
+  Meetups: undefined;
   Profile: undefined;
 };

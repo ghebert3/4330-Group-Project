@@ -1,9 +1,18 @@
+// src/navigation/RootNavigator.tsx
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
+import { navigationRef } from '../navigation/navigationRef';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import MeetupsScreen from '../screens/meetups';
+import MeetupsLoading from '../screens/MeetupsLoading';
 import { Ionicons } from '@expo/vector-icons';
-import type { RootStackParamList, AppTabParamList } from '../navigation/types';
+import * as Linking from 'expo-linking';
+
+import type {
+  RootStackParamList,
+  AppTabParamList,
+} from '../navigation/types';
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
@@ -11,14 +20,49 @@ import SignUpScreen from '../screens/SignUpScreen';
 import HomeScreen from '../screens/HomeScreen';
 import StartupScreen from '../screens/StartupScreen';
 import RestartScreen from '../screens/RestartScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+
+// If you have Search/Discover/Alerts/Profile screens, import them as well
+// import SearchScreen from '../screens/SearchScreen';
+// import DiscoverScreen from '../screens/DiscoverScreen';
+// import AlertsScreen from '../screens/AlertsScreen';
+// import ProfileScreen from '../screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const Tabs = createBottomTabNavigator<AppTabParamList>();
+const Tab = createBottomTabNavigator<AppTabParamList>();
 
-// Bottom Tab Navigator for the main app
+const MeetupsStack = createNativeStackNavigator();
+
+const LSU_PURPLE = '#461D7C';
+
+// Deep linking configuration
+const linking = {
+
+  prefixes: [Linking.createURL('/'), 'whirl://'],
+  config: {
+    screens: {
+      Startup: 'startup',
+      Login: 'login',
+      SignUp: 'signup',
+      Restart: 'restart',
+      ChangePassword: 'reset-password',
+      AppTabs: {
+      screens: {
+       Home: 'home',
+       Search: 'search',
+       Discover: 'discover',
+        Meetups: 'meetups',
+        Profile: 'profile',
+     },
+    },
+
+    },
+  },
+};
+
 function AppTabs() {
   return (
-    <Tabs.Navigator
+    <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: false,
@@ -36,8 +80,8 @@ function AppTabs() {
             case 'Discover':
               iconName = focused ? 'add-circle' : 'add-circle-outline';
               break;
-            case 'Alerts':
-              iconName = focused ? 'heart' : 'heart-outline';
+            case 'Meetups':
+              iconName = focused ? 'cloud' : 'cloud-outline';
               break;
             case 'Profile':
               iconName = focused ? 'person-circle' : 'person-circle-outline';
@@ -48,39 +92,52 @@ function AppTabs() {
             <Ionicons
               name={iconName}
               size={size}
-              color={focused ? '#5903C3' : color}
+              color={focused ? LSU_PURPLE : color}
             />
           );
         },
-        tabBarActiveTintColor: '#5903C3',
+        tabBarActiveTintColor: LSU_PURPLE,
         tabBarInactiveTintColor: '#777',
       })}
     >
-      {/* Replace HomeScreen with real screens as your team builds them */}
-      <Tabs.Screen name="Home" component={HomeScreen} />
-      <Tabs.Screen name="Search" component={HomeScreen} />
-      <Tabs.Screen name="Discover" component={HomeScreen} />
-      <Tabs.Screen name="Alerts" component={HomeScreen} />
-      <Tabs.Screen name="Profile" component={HomeScreen} />
-    </Tabs.Navigator>
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Search" component={HomeScreen} />
+      <Tab.Screen name="Discover" component={HomeScreen} />
+      <Tab.Screen name="Meetups" component={MeetupsStackNavigator} />
+      <Tab.Screen name="Profile" component={HomeScreen} />
+    </Tab.Navigator>
   );
 }
 
-// Root stack navigator
+function MeetupsStackNavigator() {
+  return (
+    <MeetupsStack.Navigator screenOptions={{ headerShown: false }}>
+      <MeetupsStack.Screen
+        name="MeetupsLoading"
+        component={MeetupsLoading}
+      />
+      <MeetupsStack.Screen
+        name="MeetupsMain"
+        component={MeetupsScreen}
+      />
+    </MeetupsStack.Navigator>
+  );
+}
+
 export default function RootNavigator() {
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef} linking={linking}>
       <Stack.Navigator
         screenOptions={{ headerShown: false }}
         initialRouteName="Startup"
       >
-        {/* Animated startup / splash screen */}
         <Stack.Screen name="Startup" component={StartupScreen} />
 
         {/* Auth flow */}
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Restart" component={RestartScreen} />
+        <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
 
         {/* Main app (tabs) */}
         <Stack.Screen name="AppTabs" component={AppTabs} />

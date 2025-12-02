@@ -1,3 +1,5 @@
+const EMAIL_CONFIRM_URL = 'https://joinwhirl.fun/auth/confirm';
+
 import React, { useState } from 'react';
 import {
   View,
@@ -5,7 +7,6 @@ import {
   TextInput,
   Pressable,
   Image,
-  ScrollView,
   Dimensions,
   Platform,
   KeyboardAvoidingView,
@@ -44,10 +45,16 @@ export default function SignUpScreen() {
 
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signUp({ email, password });
+
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: EMAIL_CONFIRM_URL,
+        },
+      });
       if (error) throw error;
 
-      // After successful sign up, send them to Login
       navigation.navigate('Login');
     } catch (e: any) {
       setError(e.message ?? 'Sign up failed');
@@ -62,16 +69,16 @@ export default function SignUpScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{
+        {/* Main content area (no ScrollView) */}
+        <View
+          style={{
+            flex: 1,
             alignItems: 'center',
             paddingTop: 10,
-            paddingBottom: H * 0.38,
+            paddingHorizontal: 16,
           }}
-          keyboardShouldPersistTaps="handled"
         >
-          {/* Whirl Logo */}
+          {/* Logo */}
           <Image
             source={whirlLogo}
             style={{
@@ -84,7 +91,6 @@ export default function SignUpScreen() {
             }}
           />
 
-          {/* Subtitle */}
           <Text
             style={{
               color: 'white',
@@ -98,7 +104,7 @@ export default function SignUpScreen() {
             Create your Account
           </Text>
 
-          {/* Form card */}
+          {/* White Card */}
           <View
             style={{
               width: '85%',
@@ -108,6 +114,7 @@ export default function SignUpScreen() {
               borderColor: '#D9D9D9',
               padding: 24,
               gap: 12,
+              marginBottom: 24,
             }}
           >
             {/* Email */}
@@ -162,7 +169,6 @@ export default function SignUpScreen() {
               placeholderTextColor="#B3B3B3"
             />
 
-            {/* Error message */}
             {error ? (
               <Text
                 style={{
@@ -197,9 +203,7 @@ export default function SignUpScreen() {
 
             {/* Link to Login */}
             <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-              <Text style={{ color: 'black', fontSize: 15 }}>
-                Have an account?
-              </Text>
+              <Text style={{ color: 'black', fontSize: 15 }}>Have an account?</Text>
               <Pressable onPress={() => navigation.navigate('Login')}>
                 <Text
                   style={{
@@ -213,26 +217,21 @@ export default function SignUpScreen() {
               </Pressable>
             </View>
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
 
-      {/* Tiger at bottom */}
+      {/* Tiger footer */}
       <View
-        pointerEvents="none"
         style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: H * 0.23,
+          width: '100%',
+          height: H * 0.2,
+          justifyContent: 'flex-end',
           overflow: 'hidden',
         }}
       >
         <Image
           source={tiger}
           style={{
-            position: 'absolute',
-            bottom: 0,
             width: '100%',
             height: '100%',
             resizeMode: 'contain',
