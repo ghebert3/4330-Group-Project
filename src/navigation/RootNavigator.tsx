@@ -5,6 +5,7 @@ import { navigationRef } from '../navigation/navigationRef';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MeetupsScreen from '../screens/meetups';
+import MeetupsLoading from '../screens/MeetupsLoading';
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 
@@ -29,6 +30,8 @@ import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<AppTabParamList>();
+
+const MeetupsStack = createNativeStackNavigator();
 
 const LSU_PURPLE = '#461D7C';
 
@@ -100,12 +103,26 @@ function AppTabs() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Search" component={HomeScreen} />
       <Tab.Screen name="Discover" component={HomeScreen} />
-      <Tab.Screen name="Meetups" component={MeetupsScreen} />
+      <Tab.Screen name="Meetups" component={MeetupsStackNavigator} />
       <Tab.Screen name="Profile" component={HomeScreen} />
     </Tab.Navigator>
   );
 }
 
+function MeetupsStackNavigator() {
+  return (
+    <MeetupsStack.Navigator screenOptions={{ headerShown: false }}>
+      <MeetupsStack.Screen
+        name="MeetupsLoading"
+        component={MeetupsLoading}
+      />
+      <MeetupsStack.Screen
+        name="MeetupsMain"
+        component={MeetupsScreen}
+      />
+    </MeetupsStack.Navigator>
+  );
+}
 
 export default function RootNavigator() {
   return (
