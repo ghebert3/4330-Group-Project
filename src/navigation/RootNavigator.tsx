@@ -11,6 +11,7 @@ import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import HomeScreen from '../screens/HomeScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
@@ -54,7 +55,7 @@ function AppTabs() {
       <Tabs.Screen name="Search" component={HomeScreen} />
       <Tabs.Screen name="Discover" component={HomeScreen} />
       <Tabs.Screen name="Alerts" component={HomeScreen} />
-      <Tabs.Screen name="Profile" component={HomeScreen} />
+      <Tabs.Screen name="Profile" component={ProfileScreen} />
     </Tabs.Navigator>
   );
 }
