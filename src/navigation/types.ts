@@ -5,6 +5,8 @@ export type RootStackParamList = {
   Restart: undefined;
   AppTabs: undefined;
   ChangePassword: undefined;
+  DMThread: { conversationId: number };
+  DMNewChat: undefined;   
 };
 
 export type AuthStackParamList = {
