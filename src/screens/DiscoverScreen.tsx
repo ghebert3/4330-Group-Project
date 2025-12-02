@@ -1,21 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, ScrollView, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, Animated, Easing } from "react-native";
-import board from '../../assets/discover/Mask group.png';
-import x from '../../assets/discover/X (1).png';
-import profile from '../../assets/discover/Ellipse 6 (1).png';
+import board from '../../assets/discover/Maskgroup.png';
+import x from '../../assets/discover/X(1).png';
+import profile from '../../assets/discover/Ellipse6(1).png';
 import role from '../../assets/discover/roles.png';
-import expandedbio from '../../assets/discover/Rectangle 12 (1).png';
-import gradientfail from '../../assets/discover/Ellipse 5.png';
-import gradientmatch from '../../assets/discover/Ellipse 5 (1).png';
-import polaroid1 from '../../assets/discover/Group 1 (1).png';
-import picture1 from '../../assets/discover/Group 2 (2).png';
-import stickynote from '../../assets/discover/Group 3 (1).png';
+import expandedbio from '../../assets/discover/Rectangle12(1).png';
+import gradientfail from '../../assets/discover/Ellipse5.png';
+import gradientmatch from '../../assets/discover/Ellipse5(1).png';
+import polaroid1 from '../../assets/discover/Group1(1).png';
+import picture1 from '../../assets/discover/Group2(2).png';
+import stickynote from '../../assets/discover/Group3(1).png';
 import sticker1 from '../../assets/discover/narutosticker.png';
-import polaroid2 from '../../assets/discover/Group 4.png';
+import polaroid2 from '../../assets/discover/Group4.png';
 import sticker2 from '../../assets/discover/luffysticker.png';
-import polaroid3 from '../../assets/discover/Group 5.png';
-import polaroid4 from '../../assets/discover/Group 6.png';
-import picture2 from '../../assets/discover/Group 7.png';
+import polaroid3 from '../../assets/discover/Group5.png';
+import polaroid4 from '../../assets/discover/Group6.png';
+import picture2 from '../../assets/discover/Group7.png';
 import sticker3 from '../../assets/discover/pochita.png';
 
 export default function DiscoverScreen() {

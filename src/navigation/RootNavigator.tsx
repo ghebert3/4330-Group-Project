@@ -1,13 +1,16 @@
 // src/navigation/RootNavigator.tsx
 import React from 'react';
+import { Image } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { navigationRef } from '../navigation/navigationRef';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MeetupsScreen from '../screens/meetups';
 import MeetupsLoading from '../screens/MeetupsLoading';
+import DiscoverScreen from '../screens/DiscoverScreen';
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
+import WhirlIcon from '../../assets/icons/whirl.png';
 
 import type {
   RootStackParamList,
@@ -22,22 +25,13 @@ import StartupScreen from '../screens/StartupScreen';
 import RestartScreen from '../screens/RestartScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 
-// If you have Search/Discover/Alerts/Profile screens, import them as well
-// import SearchScreen from '../screens/SearchScreen';
-// import DiscoverScreen from '../screens/DiscoverScreen';
-// import AlertsScreen from '../screens/AlertsScreen';
-// import ProfileScreen from '../screens/ProfileScreen';
-
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<AppTabParamList>();
-
 const MeetupsStack = createNativeStackNavigator();
 
 const LSU_PURPLE = '#461D7C';
 
-// Deep linking configuration
 const linking = {
-
   prefixes: [Linking.createURL('/'), 'whirl://'],
   config: {
     screens: {
@@ -47,15 +41,14 @@ const linking = {
       Restart: 'restart',
       ChangePassword: 'reset-password',
       AppTabs: {
-      screens: {
-       Home: 'home',
-       Search: 'search',
-       Discover: 'discover',
-        Meetups: 'meetups',
-        Profile: 'profile',
-     },
-    },
-
+        screens: {
+          Home: 'home',
+          Search: 'search',
+          Discover: 'discover',
+          Meetups: 'meetups',
+          Profile: 'profile',
+        },
+      },
     },
   },
 };
@@ -68,6 +61,20 @@ function AppTabs() {
         tabBarShowLabel: false,
         tabBarStyle: { borderTopWidth: 1, borderTopColor: '#ddd' },
         tabBarIcon: ({ color, size, focused }) => {
+          if (route.name === 'Discover') {
+            return (
+              <Image
+                source={WhirlIcon}
+                style={{
+                    width: focused ? size + 8 : size + 6,
+                    height: focused ? size + 8 : size + 6,
+                  tintColor: focused ? LSU_PURPLE : color,
+                  resizeMode: 'contain',
+                }}
+              />
+            );
+          }
+
           let iconName: keyof typeof Ionicons.glyphMap = 'home-outline';
 
           switch (route.name) {
@@ -76,9 +83,6 @@ function AppTabs() {
               break;
             case 'Search':
               iconName = focused ? 'search' : 'search-outline';
-              break;
-            case 'Discover':
-              iconName = focused ? 'add-circle' : 'add-circle-outline';
               break;
             case 'Meetups':
               iconName = focused ? 'cloud' : 'cloud-outline';
@@ -102,7 +106,7 @@ function AppTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Search" component={HomeScreen} />
-      <Tab.Screen name="Discover" component={HomeScreen} />
+      <Tab.Screen name="Discover" component={DiscoverScreen} />
       <Tab.Screen name="Meetups" component={MeetupsStackNavigator} />
       <Tab.Screen name="Profile" component={HomeScreen} />
     </Tab.Navigator>
