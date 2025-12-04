@@ -24,6 +24,7 @@ import StartupScreen from '../screens/StartupScreen';
 import RestartScreen from '../screens/RestartScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -41,6 +42,7 @@ const linking = {
       SignUp: 'signup',
       Restart: 'restart',
       ChangePassword: 'reset-password',
+      Onboarding: 'onboarding',
       AppTabs: {
         screens: {
           Home: 'home',
@@ -142,6 +144,7 @@ export default function RootNavigator() {
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Restart" component={RestartScreen} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
 
         <Stack.Screen name="AppTabs" component={AppTabs} />
       </Stack.Navigator>

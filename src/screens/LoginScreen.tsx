@@ -41,7 +41,10 @@ export default function LoginScreen() {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      navigation.replace('AppTabs');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Startup' }],
+      });
     } catch (e: any) {
       setError(e.message ?? 'Login failed');
     } finally {

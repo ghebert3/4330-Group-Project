@@ -34,12 +34,46 @@ export default function StartupScreen({ navigation }: Props) {
     ).start();
 
     const timer = setTimeout(async () => {
-      const { data } = await supabase.auth.getSession();
-      navigation.replace(data.session ? 'AppTabs' : 'Login');
+      try {
+        const { data } = await supabase.auth.getSession();
+        const session = data.session;
+
+        // Not logged in → Login
+        if (!session) {
+          navigation.replace('Login');
+          return;
+        }
+
+        // Logged in → check if this user has completed onboarding
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('display_name, major')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profileError) {
+          console.log('Error checking onboarding status:', profileError);
+          // If something goes wrong, just fall back to Home
+          navigation.replace('AppTabs');
+          return;
+        }
+
+        const needsOnboarding =
+          !profile ||
+          !profile.display_name ||
+          !profile.major ||
+          profile.display_name.trim().length === 0 ||
+          profile.major.trim().length === 0;
+
+        navigation.replace(needsOnboarding ? 'Onboarding' : 'AppTabs');
+      } catch (e) {
+        console.log('Startup error:', e);
+        navigation.replace('Login');
+      }
     }, 2200);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [navigation, fadeAnim, bob]);
 
   return (
     <View style={styles.container}>
