@@ -5,6 +5,7 @@ export type RootStackParamList = {
   Restart: undefined;
   AppTabs: undefined;
   ChangePassword: undefined;
+  Onboarding: undefined;
 };
 
 export type AuthStackParamList = {

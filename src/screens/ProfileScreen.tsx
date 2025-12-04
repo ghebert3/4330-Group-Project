@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -20,15 +20,56 @@ import { supabase } from "../lib/supabase";
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
 
-  // Load CherryBomb font for this screen
-  const [fontsLoaded] = useFonts({
-    CherryBomb: require("../../assets/fonts/CherryBombFont.ttf"),
-  });
-
   /* ----- STATE ----- */
   const [profilePic, setProfilePic] = useState<string | null>(null);
 
-  const [photos, setPhotos] = useState<{ uri: string; caption: string }[]>([]);
+  const [photos, setPhotos] = useState<{ id: number; uri: string; caption: string }[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPhotos() {
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError || !user) {
+          console.error("loadPhotos user error:", userError);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("posts")
+          .select("id, image_url, caption")
+          .eq("author", user.id)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("loadPhotos posts error:", error);
+          return;
+        }
+
+        if (isMounted && data) {
+          setPhotos(
+            data.map(p => ({
+              id: p.id,
+              uri: p.image_url || "",
+              caption: p.caption || "",
+            }))
+          );
+        }
+      } catch (e) {
+        console.error("loadPhotos error:", e);
+      }
+    }
+
+    loadPhotos();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [photoModal, setPhotoModal] = useState(false);
@@ -64,6 +105,66 @@ export default function ProfileScreen() {
 
   const [connections] = useState<{ id: string; name: string; avatar: string; major: string }[]>([]);
 
+    useEffect(() => {
+    loadProfile();
+  }, []);
+
+  async function loadProfile() {
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error("No user logged in or error:", userError);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("display_name, bio, tags, looking_for, avatar_url")
+        .eq("id", user.id)
+        .single();
+
+      if (error) {
+        console.error("Error loading profile:", error);
+        return;
+      }
+
+      setName(data.display_name ?? "");
+      setBio(data.bio ?? "");
+      setTags(data.tags ?? []);
+      setLookingForItems(data.looking_for ?? []);
+      setProfilePic(data.avatar_url ?? null);
+    } catch (err) {
+      console.error("Unexpected error loading profile:", err);
+    }
+  }
+
+  async function saveProfile() {
+    try {
+      const { error } = await supabase.rpc("update_profile", {
+        p_display_name: name,
+        p_bio: bio,
+        p_tags: tags,
+        p_looking_for: lookingForItems,
+      });
+
+      if (error) {
+        console.error("Error saving profile:", error);
+        alert("Error saving profile.");
+        return;
+      }
+
+      alert("Profile saved.");
+    } catch (err) {
+      console.error("Unexpected error saving profile:", err);
+      alert("Unexpected error saving profile.");
+    }
+  }
+
+
   /* ----- SIGN OUT ----- */
   async function handleSignOut() {
     try {
@@ -91,20 +192,78 @@ export default function ProfileScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 1,
       });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setProfilePic(result.assets[0].uri);
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
       }
+
+      const file = result.assets[0];
+      const uri = file.uri;
+
+      // 1) Get current user
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError || !user) {
+        alert("Could not get current user.");
+        return;
+      }
+
+      // 2) Convert URI → ArrayBuffer
+      const response = await fetch(uri);
+      const bytes = await response.arrayBuffer();
+
+      // 3) Choose a unique path: "userId/avatar-<timestamp>.jpg"
+      const ext = file.fileName?.split(".").pop() || "jpg";
+      const filePath = `${user.id}/avatar-${Date.now()}.${ext}`;
+
+      // 4) Upload to Storage
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, bytes, {
+          contentType: file.mimeType ?? "image/jpeg",
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        alert("Error uploading profile picture.");
+        return;
+      }
+
+      // 5) Get public URL
+      const { data: publicData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      const publicUrl = publicData.publicUrl;
+
+      // 6) Save to DB
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("id", user.id);
+
+      if (updateError) {
+        console.error("Error saving avatar_url:", updateError);
+        alert("Error saving profile picture.");
+        return;
+      }
+
+      // 7) Update local state so UI shows it right away
+      setProfilePic(publicUrl);
     } catch (e) {
       console.log("Error picking profile image:", e);
       alert("Could not pick image. Please try again.");
     }
   }
+
 
 
   /* ----- ADD NEW PHOTO ----- */
@@ -122,13 +281,15 @@ export default function ProfileScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1,1],
         quality: 0.8,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setNewPhotoUri(result.assets[0].uri);
+        const asset = result.assets[0];
+        setNewPhotoUri(asset.uri);
         setNewPhotoCaption("");
         setAddPhotoModal(true);
       }
@@ -138,15 +299,86 @@ export default function ProfileScreen() {
     }
   }
 
-  function saveNewPhoto() {
-    if (newPhotoUri) {
-      const newPhoto = { uri: newPhotoUri, caption: newPhotoCaption };
-      setPhotos(prevPhotos => [...prevPhotos, newPhoto]);
+  async function saveNewPhoto() {
+    if (!newPhotoUri) return;
+
+    try {
+      // 1) Get current user
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error("No user", userError);
+        alert("You must be logged in to upload a photo.");
+        return;
+      }
+
+      // 2) Fetch the file from the local URI
+      const response = await fetch(newPhotoUri);
+      const bytes = await response.arrayBuffer();
+
+      const ext = newPhotoUri.split(".").pop() || "jpg";
+      const filePath = `${user.id}/posts/${Date.now()}.${ext}`;
+
+      // 3) Upload to Supabase Storage (reusing 'avatars' bucket + path rule)
+      const { data: storageData, error: storageError } = await supabase.storage
+        .from("post-images") // or create a 'post-images' bucket later
+        .upload(filePath, bytes, {
+          upsert: false,
+          contentType: "image/jpeg",
+        });
+
+      if (storageError) {
+        console.error("Post image upload error:", storageError);
+        alert("Error uploading image. Please try again.");
+        return;
+      }
+
+      // 4) Get a public URL for the uploaded image
+      const { data: publicUrlData } = supabase.storage
+        .from("post-images")
+        .getPublicUrl(storageData.path);
+
+      const imageUrl = publicUrlData.publicUrl;
+
+      // 5) Insert into posts table
+      const { data: inserted, error: insertError } = await supabase
+        .from("posts")
+        .insert({
+          author: user.id,
+          caption: newPhotoCaption || null,
+          image_url: imageUrl,
+        })
+        .select("id")
+        .single();
+
+      if (insertError) {
+        console.error("Insert post error:", insertError);
+        alert("Error saving caption. Please try again.");
+        return;
+      }
+
+      // 6) Update local state for immediate UI update
+      setPhotos((prev) => [
+        { 
+          id: inserted.id,
+          uri: imageUrl, 
+          caption: newPhotoCaption, 
+        },
+        ...prev,
+      ]);
+
       setNewPhotoUri(null);
       setNewPhotoCaption("");
       setAddPhotoModal(false);
+    } catch (e) {
+      console.error("saveNewPhoto error:", e);
+      alert("Unexpected error saving photo. Please try again.");
     }
   }
+
 
   /* ----- VIEW/EDIT PHOTO ----- */
   function openPhoto(index: number) {
@@ -195,13 +427,42 @@ export default function ProfileScreen() {
     }
   }
 
-  function deletePhoto() {
-    if (selectedPhotoIndex !== null) {
-      setPhotos(photos.filter((_, i) => i !== selectedPhotoIndex));
-      setEditPhotoModal(false);
-      setSelectedPhotoIndex(null);
+  async function deletePhoto() {
+    if (selectedPhotoIndex === null) return;
+
+    const photoToDelete = photos[selectedPhotoIndex];
+
+    // Optimistically update UI
+    setPhotos(prev => prev.filter((_, i) => i !== selectedPhotoIndex));
+    setEditPhotoModal(false);
+    setSelectedPhotoIndex(null);
+
+    try {
+      // Get current user
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.log("deletePhoto – no user:", userError);
+        return;
+      }
+
+      // Delete the corresponding post row
+      const { error: deleteError } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", photoToDelete.id);
+
+      if (deleteError) {
+        console.log("deletePhoto – Supabase error:", deleteError);
+      }
+    } catch (e) {
+      console.log("deletePhoto – unexpected error:", e);
     }
   }
+
 
   /* ----- ADD NEW TAG ----- */
   function addTag() {
@@ -281,10 +542,13 @@ export default function ProfileScreen() {
     setNameEditModal(true);
   }
 
-  function saveNameEdit() {
-    if (editName.trim().length > 0) setName(editName.trim());
-    setNameEditModal(false);
+  async function saveNameEdit() {
+  if (editName.trim().length > 0) {
+    setName(editName.trim());
   }
+  setNameEditModal(false);
+  await saveProfile();
+}
 
   function openBioEdit() {
     setEditBio(bio);
@@ -292,10 +556,11 @@ export default function ProfileScreen() {
     setBioEditModal(true);
   }
 
-  function saveBioEdit() {
-    setBio(editBio.trim());
-    setBioEditModal(false);
-  }
+  async function saveBioEdit() {
+  setBio(editBio.trim());
+  setBioEditModal(false);
+  await saveProfile();
+}
 
 
   /* ----- RESET PASSWORD ----- */
@@ -320,7 +585,6 @@ export default function ProfileScreen() {
   }
 
   return (
-    fontsLoaded ? (
     <ScrollView contentContainerStyle={styles.container}>
 
       {/* SETTINGS ICON */}
@@ -328,8 +592,16 @@ export default function ProfileScreen() {
         <Ionicons name="settings-outline" size={26} color="#555" />
       </Pressable>
 
+      <Pressable
+        style={{ position: 'absolute', top: 50, left: 20, padding: 6 }}
+        onPress={() => navigation.navigate('Onboarding')}
+      >
+        <Text style={{ color: '#888', fontSize: 11 }}>Dev Onboarding</Text>
+      </Pressable>
+
+
       {/* PROFILE IMAGE */}
-      <Pressable onPress={() => setPfpOptionsModal(true)} style={styles.imageWrapper}>
+      <Pressable onPress={pickProfilePicture} style={styles.imageWrapper}>
         <Image
           source={
             profilePic
@@ -721,7 +993,10 @@ export default function ProfileScreen() {
           </View>
         </Pressable>
 
-        
+        {/* In Settings modal content, near Reset Password or at the bottom */}
+        <Pressable style={styles.modalBtn} onPress={saveProfile}>
+          <Text style={styles.modalBtnText}>Save changes</Text>
+        </Pressable>
 
         <View style={{ height: 12 }} />
       </View>
@@ -739,8 +1014,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
     </ScrollView>
-    ) : null
-  );
+    )
 }
 
 

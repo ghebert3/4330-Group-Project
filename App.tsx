@@ -9,8 +9,8 @@ import  DiscoverScreen  from "./src/screens/DiscoverScreen";
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    FodaDisplay: require('./assets/fonts/Foda_Display.ttf'),
-    CherryBomb: require('./assets/fonts/CherryBombFont.ttf'),
+    FodaDisplay: require('./assets/Fonts/Foda_Display.ttf'),
+    CherryBomb: require('./assets/Fonts/CherryBombFont.ttf')
   });
 
   useEffect(() => {
