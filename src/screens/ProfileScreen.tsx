@@ -9,14 +9,21 @@ import {
   Modal,
   TextInput,
   FlatList,
+  Dimensions,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { useFonts } from "expo-font";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
+
+  // Load CherryBomb font for this screen
+  const [fontsLoaded] = useFonts({
+    CherryBomb: require("../../assets/fonts/CherryBombFont.ttf"),
+  });
 
   /* ----- STATE ----- */
   const [profilePic, setProfilePic] = useState<string | null>(null);
@@ -25,6 +32,7 @@ export default function ProfileScreen() {
 
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [photoModal, setPhotoModal] = useState(false);
+  const [largeImageHeight, setLargeImageHeight] = useState<number>(400);
   const [editPhotoModal, setEditPhotoModal] = useState(false);
   const [editCaption, setEditCaption] = useState("");
 
@@ -42,50 +50,59 @@ export default function ProfileScreen() {
   const [lookingForModal, setLookingForModal] = useState(false);
   const [connectionsModal, setConnectionsModal] = useState(false);
   const [settingsModal, setSettingsModal] = useState(false);
+  const [nameEditModal, setNameEditModal] = useState(false);
+  const [bioEditModal, setBioEditModal] = useState(false);
+  const [pfpOptionsModal, setPfpOptionsModal] = useState(false);
 
-  const [name, setName] = useState("Thomas Lee");
+  // Account details
+  const [email, setEmail] = useState<string | null>(null);
+
+  const [name, setName] = useState("");
   const [editName, setEditName] = useState("");
+  const [bio, setBio] = useState("");
+  const [editBio, setEditBio] = useState("");
 
-  const [connections] = useState([
-    { id: "1", name: "Sarah Chen", avatar: "https://i.pravatar.cc/100?img=1", major: "Biology" },
-    { id: "2", name: "Mike Johnson", avatar: "https://i.pravatar.cc/100?img=2", major: "Engineering" },
-    { id: "3", name: "Emily Davis", avatar: "https://i.pravatar.cc/100?img=3", major: "Psychology" },
-    { id: "4", name: "Alex Kim", avatar: "https://i.pravatar.cc/100?img=4", major: "Computer Science" },
-    { id: "5", name: "Jordan Smith", avatar: "https://i.pravatar.cc/100?img=5", major: "Business" },
-    { id: "6", name: "Taylor Brown", avatar: "https://i.pravatar.cc/100?img=6", major: "Art" },
-    { id: "7", name: "Casey Wilson", avatar: "https://i.pravatar.cc/100?img=7", major: "Music" },
-    { id: "8", name: "Morgan Lee", avatar: "https://i.pravatar.cc/100?img=8", major: "Chemistry" },
-    { id: "9", name: "Jamie Garcia", avatar: "https://i.pravatar.cc/100?img=9", major: "Math" },
-    { id: "10", name: "Riley Martinez", avatar: "https://i.pravatar.cc/100?img=10", major: "Physics" },
-  ]);
+  const [connections] = useState<{ id: string; name: string; avatar: string; major: string }[]>([]);
 
   /* ----- SIGN OUT ----- */
   async function handleSignOut() {
-  try {
-    await supabase.auth.signOut();
-    setSettingsModal(false);
+    try {
+      await supabase.auth.signOut();
+      setSettingsModal(false);
 
-    const parentNav = navigation.getParent?.() ?? navigation;
-    parentNav.reset({
-      index: 0,
-      routes: [{ name: "Startup" }],
-    });
-  } catch (error) {
-    console.error("Error signing out:", error);
-    alert("Error signing out. Please try again.");
+      // Navigate back to Login screen
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+    } catch (error) {
+      console.error("Error signing out:", error);
+      alert("Error signing out. Please try again.");
+    }
   }
-}
 
   /* ----- PICK PROFILE PICTURE ----- */
   async function pickProfilePicture() {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        alert("Permission to access photos is required.");
+        return;
+      }
 
-    if (!result.canceled) {
-      setProfilePic(result.assets[0].uri);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setProfilePic(result.assets[0].uri);
+      }
+    } catch (e) {
+      console.log("Error picking profile image:", e);
+      alert("Could not pick image. Please try again.");
     }
   }
 
@@ -106,7 +123,7 @@ export default function ProfileScreen() {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
+        allowsEditing: false,
         quality: 0.8,
       });
 
@@ -133,8 +150,31 @@ export default function ProfileScreen() {
 
   /* ----- VIEW/EDIT PHOTO ----- */
   function openPhoto(index: number) {
-    setSelectedPhotoIndex(index);
-    setPhotoModal(true);
+    const uri = photos[index]?.uri;
+    const screenW = Dimensions.get("window").width;
+    const maxH = Dimensions.get("window").height * 0.85;
+    if (uri) {
+      Image.getSize(
+        uri,
+        (w, h) => {
+          const displayW = Math.min(screenW * 0.95, w);
+          const scale = displayW / w;
+          const displayH = Math.min(h * scale, maxH);
+          setLargeImageHeight(displayH);
+          setSelectedPhotoIndex(index);
+          setPhotoModal(true);
+        },
+        (err) => {
+          setLargeImageHeight(Math.min(400, maxH));
+          setSelectedPhotoIndex(index);
+          setPhotoModal(true);
+        }
+      );
+    } else {
+      setLargeImageHeight(Math.min(400, maxH));
+      setSelectedPhotoIndex(index);
+      setPhotoModal(true);
+    }
   }
 
   function openEditPhoto() {
@@ -212,19 +252,75 @@ export default function ProfileScreen() {
   }
 
   /* ----- SETTINGS ----- */
-  function openSettings() {
+  async function openSettings() {
     setEditName(name);
+    setEditBio(bio);
     setSettingsModal(true);
+    try {
+      const { data, error } = await supabase.auth.getUser();
+      if (!error) {
+        setEmail(data.user?.email ?? null);
+      }
+    } catch (e) {
+      console.log("Error fetching user:", e);
+    }
   }
 
   function saveName() {
     if (editName.trim().length > 0) {
       setName(editName.trim());
     }
+    setBio(editBio.trim());
     setSettingsModal(false);
   }
 
+  /* ----- SINGLE-FIELD EDIT BUBBLES ----- */
+  function openNameEdit() {
+    setEditName(name);
+    setSettingsModal(false);
+    setNameEditModal(true);
+  }
+
+  function saveNameEdit() {
+    if (editName.trim().length > 0) setName(editName.trim());
+    setNameEditModal(false);
+  }
+
+  function openBioEdit() {
+    setEditBio(bio);
+    setSettingsModal(false);
+    setBioEditModal(true);
+  }
+
+  function saveBioEdit() {
+    setBio(editBio.trim());
+    setBioEditModal(false);
+  }
+
+
+  /* ----- RESET PASSWORD ----- */
+  async function handleResetPassword() {
+    if (!email) {
+      alert("No email associated with this account.");
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      alert("Password reset email sent. Check your inbox.");
+    } catch (e) {
+      console.error("Reset password error:", e);
+      alert("Could not send password reset email.");
+    }
+  }
+
+  /* ----- REMOVE PROFILE PICTURE ----- */
+  function removeProfilePicture() {
+    setProfilePic(null);
+  }
+
   return (
+    fontsLoaded ? (
     <ScrollView contentContainerStyle={styles.container}>
 
       {/* SETTINGS ICON */}
@@ -233,19 +329,27 @@ export default function ProfileScreen() {
       </Pressable>
 
       {/* PROFILE IMAGE */}
-      <Pressable onPress={pickProfilePicture} style={styles.imageWrapper}>
+      <Pressable onPress={() => setPfpOptionsModal(true)} style={styles.imageWrapper}>
         <Image
-          source={{
-            uri:
-              profilePic ||
-              "https://via.placeholder.com/150/cccccc/000000?text=Add+Photo",
-          }}
+          source={
+            profilePic
+              ? { uri: profilePic }
+              : require("../../assets/avatars/Default_pfp.jpg")
+          }
           style={styles.profileImage}
         />
       </Pressable>
 
       {/* NAME */}
       <Text style={styles.name}>{name}</Text>
+      {/* BIO */}
+      {bio && bio.trim().length > 0 ? (
+        <Text style={styles.bioText}>{bio}</Text>
+      ) : (
+        <Pressable onPress={openSettings} style={styles.bioPlaceholderWrapper}>
+          <Text style={styles.bioPlaceholder}>Add a short bio</Text>
+        </Pressable>
+      )}
 
       {/* TAGS */}
       <View style={styles.tagContainer}>
@@ -257,37 +361,41 @@ export default function ProfileScreen() {
 
         {/* Add Tag Button */}
         <Pressable style={styles.addTagButton} onPress={() => setTagModal(true)}>
-          <Text style={{ color: "#555" }}>+ Tag</Text>
+          <Text style={{ color: "#555", fontFamily: "CherryBomb" }}>+ Tag</Text>
         </Pressable>
       </View>
 
       {/* LOOKING FOR */}
-      <Text style={styles.sectionTitle}>Looking for</Text>
+      <View style={styles.sectionBox}>
+        <Text style={styles.sectionTitle}>Looking for</Text>
 
-      <View style={styles.lookingForContainer}>
-        {lookingForItems.map((item, i) => (
-          <View key={i} style={styles.lookingForItem}>
-            <Text style={styles.lookingForText}>{item}</Text>
-            <Pressable onPress={() => removeLookingFor(i)} style={styles.removeBtn}>
-              <Text style={styles.removeBtnText}>×</Text>
-            </Pressable>
-          </View>
-        ))}
-        <Pressable style={styles.addLookingForBtn} onPress={() => setLookingForModal(true)}>
-          <Text style={{ color: "#555" }}>+ Add</Text>
-        </Pressable>
+        <View style={styles.lookingForContainer}>
+          {lookingForItems.map((item, i) => (
+            <View key={i} style={styles.lookingForItem}>
+              <Text style={styles.lookingForText}>{item}</Text>
+              <Pressable onPress={() => removeLookingFor(i)} style={styles.removeBtn}>
+                <Text style={styles.removeBtnText}>×</Text>
+              </Pressable>
+            </View>
+          ))}
+          <Pressable style={styles.addLookingForBtn} onPress={() => setLookingForModal(true)}>
+            <Text style={{ color: "#555", fontFamily: "CherryBomb" }}>+ Add</Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* STATS */}
-      <View style={styles.statsRow}>
-        <Stat number="6" label="Whirls" />
-        <Pressable onPress={() => setConnectionsModal(true)}>
-          <View style={styles.statBlock}>
-            <Text style={styles.statNumber}>{connections.length}</Text>
-            <Text style={[styles.statLabel, { color: "#5903C3" }]}>Campus Connections</Text>
-          </View>
-        </Pressable>
-        <Stat number="150" label="People met" />
+      <View style={styles.sectionBox}>
+        <View style={styles.statsRow}>
+          <Stat number="0" label="Whirls" />
+          <Pressable onPress={() => setConnectionsModal(true)}>
+            <View style={styles.statBlock}>
+              <Text style={styles.statNumber}>{connections.length}</Text>
+              <Text style={[styles.statLabel, { color: "#5903C3" }]}>Campus Connections</Text>
+            </View>
+          </Pressable>
+          <Stat number="0" label="People met" />
+        </View>
       </View>
 
       {/* PHOTO ROW (click to enlarge) */}
@@ -319,15 +427,17 @@ export default function ProfileScreen() {
           </Pressable>
           {selectedPhotoIndex !== null && (
             <View style={styles.photoModalContent}>
-              <Image 
-                source={{ uri: photos[selectedPhotoIndex]?.uri }} 
-                style={styles.largeImage} 
-              />
-              {photos[selectedPhotoIndex]?.caption ? (
-                <View style={styles.captionContainer}>
-                  <Text style={styles.captionText}>{photos[selectedPhotoIndex].caption}</Text>
-                </View>
-              ) : null}
+              <View style={styles.imageWithCaption}>
+                <Image 
+                  source={{ uri: photos[selectedPhotoIndex]?.uri }} 
+                  style={[styles.largeImage, { height: largeImageHeight }]} 
+                />
+                  {photos[selectedPhotoIndex]?.caption ? (
+                    <View style={styles.captionBubble}>
+                      <Text style={styles.captionText}>{photos[selectedPhotoIndex].caption}</Text>
+                    </View>
+                  ) : null}
+              </View>
               <Pressable style={styles.editPhotoBtn} onPress={openEditPhoto}>
                 <Ionicons name="pencil" size={18} color="#fff" />
                 <Text style={styles.editPhotoBtnText}>Edit</Text>
@@ -364,6 +474,78 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* PROFILE PICTURE OPTIONS MODAL */}
+      <Modal visible={pfpOptionsModal} transparent animationType="fade">
+        <View style={styles.modalCenter}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Profile Picture</Text>
+            <View style={styles.modalBtnRow}>
+              <Pressable style={styles.modalBtnCancel} onPress={() => { setPfpOptionsModal(false); }}>
+                <Text style={styles.modalBtnCancelText}>Close</Text>
+              </Pressable>
+              <Pressable style={styles.modalBtn} onPress={() => { setPfpOptionsModal(false); pickProfilePicture(); }}>
+                <Text style={styles.modalBtnText}>Change</Text>
+              </Pressable>
+            </View>
+            <View style={{ height: 8 }} />
+            <Pressable style={styles.modalBtnDelete} onPress={() => { removeProfilePicture(); setPfpOptionsModal(false); }}>
+              <Text style={styles.modalBtnText}>Remove</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+  
+      {/* NAME EDIT BUBBLE */}
+      <Modal visible={nameEditModal} transparent animationType="fade">
+        <View style={styles.modalCenter}>
+          <View style={styles.smallBubble}>
+            <Text style={styles.modalTitle}>Change Display Name</Text>
+            <TextInput
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Your name"
+              style={styles.bubbleInput}
+            />
+            <View style={styles.bubbleBtnRow}>
+              <Pressable style={styles.modalIconDelete} onPress={() => { setNameEditModal(false); setSettingsModal(true); }}>
+                <Ionicons name="close" size={20} color="#fff" />
+              </Pressable>
+              <Pressable style={styles.modalIconSave} onPress={() => { saveNameEdit(); setSettingsModal(true); }}>
+                <Ionicons name="checkmark" size={22} color="#fff" />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* BIO EDIT BUBBLE */}
+      <Modal visible={bioEditModal} transparent animationType="fade">
+        <View style={styles.modalCenter}>
+          <View style={styles.smallBubble}>
+            <Text style={styles.modalTitle}>Change Bio</Text>
+            <TextInput
+              value={editBio}
+              onChangeText={setEditBio}
+              placeholder="A sentence or two about you"
+              style={[styles.bubbleInput, { height: 90 }]}
+              multiline
+              maxLength={160}
+            />
+            <Text style={styles.bioCount}>{editBio.length}/160</Text>
+            <View style={styles.bubbleBtnRow}>
+              <Pressable style={styles.modalIconDelete} onPress={() => { setBioEditModal(false); setSettingsModal(true); }}>
+                <Ionicons name="close" size={20} color="#fff" />
+              </Pressable>
+              <Pressable style={styles.modalIconSave} onPress={() => { saveBioEdit(); setSettingsModal(true); }}>
+                <Ionicons name="checkmark" size={22} color="#fff" />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      
 
       {/* ADD PHOTO MODAL */}
       <Modal visible={addPhotoModal} transparent animationType="fade">
@@ -500,26 +682,48 @@ export default function ProfileScreen() {
 <Modal visible={settingsModal} transparent animationType="fade">
   <View style={styles.modalCenter}>
     <View style={styles.modalBox}>
-      <Text style={styles.modalTitle}>Settings</Text>
-
-      <Text style={styles.inputLabel}>Display Name</Text>
-      <TextInput
-        value={editName}
-        onChangeText={setEditName}
-        placeholder="Your name"
-        style={styles.inputField}
-      />
-
-      <View style={styles.modalBtnRow}>
-        <Pressable
-          style={styles.modalBtnCancel}
-          onPress={() => setSettingsModal(false)}
-        >
-          <Text style={styles.modalBtnCancelText}>Cancel</Text>
+      <View style={styles.connectionsHeader}>
+        <Text style={styles.modalTitle}>Settings</Text>
+        <Pressable onPress={() => setSettingsModal(false)} style={styles.closeBtn}>
+          <Text style={styles.closeBtnText}>✕</Text>
         </Pressable>
-        <Pressable style={styles.modalBtn} onPress={saveName}>
-          <Text style={styles.modalBtnText}>Save</Text>
+      </View>
+
+      <View style={{ width: "100%" }}>
+        <Pressable style={styles.settingsRow} onPress={openNameEdit}>
+          <View>
+            <Text style={styles.settingsRowLabel}>Change display name</Text>
+            <Text style={styles.settingsRowValue}>{name ? name : "Not set"}</Text>
+          </View>
         </Pressable>
+
+        <Pressable style={styles.settingsRow} onPress={openBioEdit}>
+          <View>
+            <Text style={styles.settingsRowLabel}>Change bio</Text>
+            <Text style={styles.settingsRowValue}>{bio ? (bio.length > 60 ? bio.slice(0, 57) + "..." : bio) : "Add a short bio"}</Text>
+          </View>
+        </Pressable>
+
+        {/* View Email (non-pressable) */}
+        <View style={styles.settingsRow}>
+          <View>
+            <Text style={styles.settingsRowLabel}>Email</Text>
+            <Text style={styles.settingsRowValue}>{email ?? "Not available"}</Text>
+          </View>
+        </View>
+
+        
+
+        {/* Reset Password */}
+        <Pressable style={styles.settingsRow} onPress={handleResetPassword}>
+          <View>
+            <Text style={[styles.settingsRowLabel, { color: "#e74c3c" }]}>Reset password</Text>
+          </View>
+        </Pressable>
+
+        
+
+        <View style={{ height: 12 }} />
       </View>
 
       {/* SIGN OUT */}
@@ -535,6 +739,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
     </ScrollView>
+    ) : null
   );
 }
 
@@ -589,6 +794,91 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "600",
     marginTop: 20,
+    fontFamily: "CherryBomb",
+  },
+  bioText: {
+    fontSize: 14,
+    color: "#444",
+    marginTop: 8,
+    textAlign: "center",
+    paddingHorizontal: 20,
+    fontFamily: "CherryBomb",
+  },
+  bioPlaceholderWrapper: {
+    marginTop: 8,
+  },
+  bioPlaceholder: {
+    fontSize: 14,
+    color: "#999",
+    fontStyle: "italic",
+    fontFamily: "CherryBomb",
+  },
+  bioInputBubble: {
+    backgroundColor: "#f7f7f8",
+    borderRadius: 12,
+    padding: 10,
+    width: "100%",
+    minHeight: 80,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  bioInput: {
+    color: "#222",
+    fontSize: 14,
+    padding: 6,
+    textAlignVertical: "top",
+    minHeight: 56,
+    fontFamily: "CherryBomb",
+  },
+  bioCount: {
+    alignSelf: "flex-end",
+    color: "#999",
+    fontSize: 12,
+    marginTop: 6,
+    fontFamily: "CherryBomb",
+  },
+  /* Settings option rows */
+  settingsRow: {
+    width: "100%",
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  settingsRowLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#222",
+    fontFamily: "CherryBomb",
+  },
+  settingsRowValue: {
+    fontSize: 13,
+    color: "#666",
+    marginTop: 4,
+    fontFamily: "CherryBomb",
+  },
+  /* Small bubble edit modal */
+  smallBubble: {
+    width: "88%",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 16,
+    alignItems: "center",
+    gap: 10,
+  },
+  bubbleInput: {
+    width: "100%",
+    borderRadius: 10,
+    backgroundColor: "#f7f7f8",
+    padding: 10,
+    fontSize: 15,
+    fontFamily: "CherryBomb",
+  },
+  bubbleBtnRow: {
+    flexDirection: "row",
+    marginTop: 8,
+    gap: 12,
   },
 
   /* TAGS */
@@ -607,6 +897,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
+    fontFamily: "CherryBomb",
   },
   addTagButton: {
     backgroundColor: "#ddd",
@@ -621,13 +912,22 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     alignSelf: "flex-start",
     marginBottom: 10,
+    fontFamily: "CherryBomb",
+  },
+  sectionBox: {
+    width: "100%",
+    backgroundColor: "#f5f5f5",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    padding: 15,
+    marginBottom: 20,
   },
   lookingForContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
     width: "100%",
-    marginBottom: 25,
   },
   lookingForItem: {
     backgroundColor: "#dcdcdc",
@@ -640,6 +940,7 @@ const styles = StyleSheet.create({
   },
   lookingForText: {
     color: "#444",
+    fontFamily: "CherryBomb",
   },
   removeBtn: {
     backgroundColor: "#bbb",
@@ -654,6 +955,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     lineHeight: 18,
+    fontFamily: "CherryBomb",
   },
   addLookingForBtn: {
     backgroundColor: "#eee",
@@ -670,6 +972,7 @@ const styles = StyleSheet.create({
   },
   inputText: {
     color: "#444",
+    fontFamily: "CherryBomb",
   },
 
   /* STATS */
@@ -677,7 +980,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     width: "100%",
     justifyContent: "space-between",
-    marginBottom: 20,
   },
   statBlock: {
     flex: 1,
@@ -686,11 +988,13 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 20,
     fontWeight: "700",
+    fontFamily: "CherryBomb",
   },
   statLabel: {
     fontSize: 12,
     marginTop: 3,
     textAlign: "center",
+    fontFamily: "CherryBomb",
   },
 
   /* PHOTOS */
@@ -698,13 +1002,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     width: "100%",
-    justifyContent: "center",
+    justifyContent: "flex-start",
+    alignSelf: "center",
+    maxWidth: 336,
     gap: 8,
   },
   smallImage: {
     width: 105,
     height: 105,
     borderRadius: 14,
+    resizeMode: "cover",
   },
   addPhotoButton: {
     marginTop: 15,
@@ -716,6 +1023,7 @@ const styles = StyleSheet.create({
   addPhotoText: {
     fontSize: 14,
     color: "#444",
+    fontFamily: "CherryBomb",
   },
 
   /* NAV BAR */
@@ -731,6 +1039,7 @@ const styles = StyleSheet.create({
   navItem: { alignItems: "center" },
   navIcon: { fontSize: 24 },
   navLabel: { fontSize: 10, textAlign: "center" },
+  
 
   /* MODALS */
   modalBackground: {
@@ -740,9 +1049,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   largeImage: {
-    width: "90%",
-    height: "70%",
-    borderRadius: 10,
+    width: "100%",
+    height: 400,
+    resizeMode: "contain",
   },
 
   modalCenter: {
@@ -761,17 +1070,20 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 16,
     fontWeight: "600",
+    fontFamily: "CherryBomb",
   },
   inputLabel: {
     fontSize: 14,
     color: "#555",
     marginTop: 5,
+    fontFamily: "CherryBomb",
   },
   inputField: {
     backgroundColor: "#eee",
     padding: 10,
     borderRadius: 8,
     width: "100%",
+    fontFamily: "CherryBomb",
   },
   modalBtnRow: {
     flexDirection: "row",
@@ -794,6 +1106,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#555",
     fontWeight: "600",
+    fontFamily: "CherryBomb",
   },
   modalBtnDelete: {
     flex: 1,
@@ -801,15 +1114,34 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
   },
+  modalIconDelete: {
+    backgroundColor: "#e74c3c",
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalIconSave: {
+    backgroundColor: "#a87bd6",
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 12,
+  },
   modalBtnText: {
     textAlign: "center",
     color: "#fff",
     fontWeight: "600",
+    fontFamily: "CherryBomb",
   },
   cancelText: {
     textAlign: "center",
     color: "#777",
     marginTop: 5,
+    fontFamily: "CherryBomb",
   },
 
   /* CONNECTIONS MODAL */
@@ -836,6 +1168,7 @@ const styles = StyleSheet.create({
   connectionsTitle: {
     fontSize: 20,
     fontWeight: "600",
+    fontFamily: "CherryBomb",
   },
   closeBtn: {
     padding: 5,
@@ -843,6 +1176,7 @@ const styles = StyleSheet.create({
   closeBtnText: {
     fontSize: 20,
     color: "#666",
+    fontFamily: "CherryBomb",
   },
   connectionItem: {
     flexDirection: "row",
@@ -862,11 +1196,13 @@ const styles = StyleSheet.create({
   connectionName: {
     fontSize: 16,
     fontWeight: "600",
+    fontFamily: "CherryBomb",
   },
   connectionMajor: {
     fontSize: 13,
     color: "#777",
     marginTop: 2,
+    fontFamily: "CherryBomb",
   },
   connectionSeparator: {
     height: 1,
@@ -889,21 +1225,36 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   photoModalContent: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  imageWithCaption: {
     width: "100%",
     alignItems: "center",
   },
-  captionContainer: {
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    marginTop: 15,
-    borderRadius: 8,
-    maxWidth: "90%",
+  captionBubble: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    maxWidth: "88%",
+    alignItems: "center",
+    marginTop: 12,
+    // shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
   },
   captionText: {
-    color: "#fff",
-    fontSize: 15,
+    color: "#222",
+    fontSize: 16,
     textAlign: "center",
+    lineHeight: 20,
+    fontFamily: "CherryBomb",
   },
   editPhotoBtn: {
     flexDirection: "row",
@@ -919,6 +1270,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "500",
+    fontFamily: "CherryBomb",
   },
   previewImage: {
     width: "100%",
@@ -941,5 +1293,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#fff",
     fontWeight: "600",
+    fontFamily: "CherryBomb",
   },
-}); 
+});
