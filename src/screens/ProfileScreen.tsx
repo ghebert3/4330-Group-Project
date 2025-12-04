@@ -12,8 +12,12 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { supabase } from "../lib/supabase";
 
 export default function ProfileScreen() {
+  const navigation = useNavigation<any>();
+
   /* ----- STATE ----- */
   const [profilePic, setProfilePic] = useState<string | null>(null);
 
@@ -55,6 +59,23 @@ export default function ProfileScreen() {
     { id: "10", name: "Riley Martinez", avatar: "https://i.pravatar.cc/100?img=10", major: "Physics" },
   ]);
 
+  /* ----- SIGN OUT ----- */
+  async function handleSignOut() {
+  try {
+    await supabase.auth.signOut();
+    setSettingsModal(false);
+
+    const parentNav = navigation.getParent?.() ?? navigation;
+    parentNav.reset({
+      index: 0,
+      routes: [{ name: "Startup" }],
+    });
+  } catch (error) {
+    console.error("Error signing out:", error);
+    alert("Error signing out. Please try again.");
+  }
+}
+
   /* ----- PICK PROFILE PICTURE ----- */
   async function pickProfilePicture() {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -67,6 +88,7 @@ export default function ProfileScreen() {
       setProfilePic(result.assets[0].uri);
     }
   }
+
 
   /* ----- ADD NEW PHOTO ----- */
   const [addPhotoModal, setAddPhotoModal] = useState(false);
@@ -474,24 +496,39 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* SETTINGS MODAL */}
-      <Modal visible={settingsModal} transparent animationType="fade">
-        <View style={styles.modalCenter}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Settings</Text>
-            <Text style={styles.inputLabel}>Display Name</Text>
-            <TextInput
-              value={editName}
-              onChangeText={setEditName}
-              placeholder="Your name"
-              style={styles.inputField}
-            />
-            <View style={styles.modalBtnRow}>
-              <Pressable style={styles.modalBtnCancel} onPress={() => setSettingsModal(false)}>
-                <Text style={styles.modalBtnCancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable style={styles.modalBtn} onPress={saveName}>
-                <Text style={styles.modalBtnText}>Save</Text>
+  {/* SETTINGS MODAL */}
+<Modal visible={settingsModal} transparent animationType="fade">
+  <View style={styles.modalCenter}>
+    <View style={styles.modalBox}>
+      <Text style={styles.modalTitle}>Settings</Text>
+
+      <Text style={styles.inputLabel}>Display Name</Text>
+      <TextInput
+        value={editName}
+        onChangeText={setEditName}
+        placeholder="Your name"
+        style={styles.inputField}
+      />
+
+      <View style={styles.modalBtnRow}>
+        <Pressable
+          style={styles.modalBtnCancel}
+          onPress={() => setSettingsModal(false)}
+        >
+          <Text style={styles.modalBtnCancelText}>Cancel</Text>
+        </Pressable>
+        <Pressable style={styles.modalBtn} onPress={saveName}>
+          <Text style={styles.modalBtnText}>Save</Text>
+        </Pressable>
+      </View>
+
+      {/* SIGN OUT */}
+            <View style={styles.signOutSection}>
+              <Pressable
+                style={styles.signOutButton}
+                onPress={handleSignOut}
+              >
+                <Text style={styles.signOutText}>Sign Out</Text>
               </Pressable>
             </View>
           </View>
@@ -500,6 +537,7 @@ export default function ProfileScreen() {
     </ScrollView>
   );
 }
+
 
 /* ----- COMPONENTS ----- */
 const Stat = ({ number, label }: { number: string; label: string }) => (
@@ -888,4 +926,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
   },
-});
+     signOutSection: {
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    paddingTop: 12,
+  },
+  signOutButton: {
+    backgroundColor: "#e74c3c",
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  signOutText: {
+    textAlign: "center",
+    color: "#fff",
+    fontWeight: "600",
+  },
+}); 
