@@ -133,6 +133,7 @@ Then:
 If Expo Go won’t load on your laptop:
 Run npm install
 Run npm install expo
+Run npx expo install @react-native-async-storage/async-storage
 
 make sure your tsconfig looks like 
 
