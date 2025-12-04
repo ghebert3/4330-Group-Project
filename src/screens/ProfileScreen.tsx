@@ -17,6 +17,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
 
+const IMG_TOP =
+  "https://www.figma.com/api/mcp/asset/b423224a-73b2-44b6-85f7-06dc37aea3a1";
+const IMG_BACKGROUND =
+  "https://www.figma.com/api/mcp/asset/d0b31084-1d39-4440-a66f-5c1be288ce59";
+
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
 
@@ -24,11 +29,16 @@ export default function ProfileScreen() {
   const [profilePic, setProfilePic] = useState<string | null>(null);
 
   const [photos, setPhotos] = useState<{ id: number; uri: string; caption: string }[]>([]);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [photosLoading, setPhotosLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadPhotos() {
+
+      setPhotosLoading(true);
+      
       try {
         const {
           data: { user },
@@ -62,6 +72,10 @@ export default function ProfileScreen() {
         }
       } catch (e) {
         console.error("loadPhotos error:", e);
+      } finally {
+        if (isMounted) {
+          setPhotosLoading(false);
+        }
       }
     }
 
@@ -110,6 +124,9 @@ export default function ProfileScreen() {
   }, []);
 
   async function loadProfile() {
+
+    setProfileLoading(true);
+
     try {
       const {
         data: { user },
@@ -139,6 +156,8 @@ export default function ProfileScreen() {
       setProfilePic(data.avatar_url ?? null);
     } catch (err) {
       console.error("Unexpected error loading profile:", err);
+    } finally {
+      setProfileLoading(false);
     }
   }
 
@@ -160,7 +179,8 @@ export default function ProfileScreen() {
       alert("Profile saved.");
     } catch (err) {
       console.error("Unexpected error saving profile:", err);
-      alert("Unexpected error saving profile.");
+    } finally {
+      setProfileLoading(false);
     }
   }
 
@@ -582,6 +602,32 @@ export default function ProfileScreen() {
   /* ----- REMOVE PROFILE PICTURE ----- */
   function removeProfilePicture() {
     setProfilePic(null);
+  }
+
+    // ---- FULL SCREEN LOADING ----
+  // ---- FULL SCREEN LOADING (same visuals as MeetupsLoading) ----
+  const isLoading = profileLoading || photosLoading;
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <View style={styles.loadingBgWrapper}>
+          <Image
+            source={{ uri: IMG_BACKGROUND }}
+            style={styles.loadingBgImage}
+            resizeMode="cover"
+          />
+        </View>
+
+        <View style={styles.loadingMainWrapper}>
+          <Image
+            source={{ uri: IMG_TOP }}
+            style={styles.loadingMainImage}
+            resizeMode="cover"
+          />
+        </View>
+      </View>
+    );
   }
 
   return (
@@ -1019,6 +1065,8 @@ export default function ProfileScreen() {
 
 
 /* ----- COMPONENTS ----- */
+
+
 const Stat = ({ number, label }: { number: string; label: string }) => (
   <View style={styles.statBlock}>
     <Text style={styles.statNumber}>{number}</Text>
@@ -1040,6 +1088,33 @@ const styles = StyleSheet.create({
     paddingBottom: 150,
     alignItems: "center",
     backgroundColor: "#fff",
+  },
+
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  loadingBgWrapper: {
+    position: "absolute",
+    left: -83,
+    top: 319,
+    width: 541,
+    height: 541,
+  },
+  loadingBgImage: {
+    width: "100%",
+    height: "100%",
+  },
+  loadingMainWrapper: {
+    position: "absolute",
+    left: 12,
+    top: 147,
+    width: 351,
+    height: 343,
+  },
+  loadingMainImage: {
+    width: "100%",
+    height: "100%",
   },
 
   settingsIcon: {
