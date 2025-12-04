@@ -1,4 +1,3 @@
-// src/navigation/RootNavigator.tsx
 import React from 'react';
 import { Image } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -24,6 +23,8 @@ import HomeScreen from '../screens/HomeScreen';
 import StartupScreen from '../screens/StartupScreen';
 import RestartScreen from '../screens/RestartScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<AppTabParamList>();
@@ -106,9 +107,9 @@ function AppTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Search" component={HomeScreen} />
-      <Tab.Screen name="Discover" component={DiscoverScreen} />
+      <Tab.Screen name="Discover" component={HomeScreen} />
       <Tab.Screen name="Meetups" component={MeetupsStackNavigator} />
-      <Tab.Screen name="Profile" component={HomeScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
@@ -137,13 +138,11 @@ export default function RootNavigator() {
       >
         <Stack.Screen name="Startup" component={StartupScreen} />
 
-        {/* Auth flow */}
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Restart" component={RestartScreen} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
 
-        {/* Main app (tabs) */}
         <Stack.Screen name="AppTabs" component={AppTabs} />
       </Stack.Navigator>
     </NavigationContainer>
