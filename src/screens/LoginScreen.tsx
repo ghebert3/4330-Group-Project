@@ -13,6 +13,7 @@ import {
 import AnimatedButton from '../components/AnimatedButton';
 import { useNavigation } from '@react-navigation/native';
 import FadeInView from '../components/FadeInView';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { supabase } from '../lib/supabase';
@@ -28,6 +29,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const H = Dimensions.get('window').height;
 
@@ -126,20 +128,45 @@ export default function LoginScreen() {
             />
 
             <Text style={{ fontSize: 16, fontWeight: '400' }}>Password</Text>
-            <TextInput
-              placeholder="Password"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
+            <View
               style={{
-                borderWidth: 1,
-                borderColor: '#D9D9D9',
-                borderRadius: 8,
-                padding: 12,
+                position: 'relative',
                 marginBottom: 16,
               }}
-              placeholderTextColor="#B3B3B3"
-            />
+            >
+              <TextInput
+                placeholder="Password"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#D9D9D9',
+                  borderRadius: 8,
+                  padding: 12,
+                  paddingRight: 40, // space for the eye icon
+                }}
+                placeholderTextColor="#B3B3B3"
+              />
+
+              <Pressable
+                onPress={() => setShowPassword((prev) => !prev)}
+                style={{
+                  position: 'absolute',
+                  right: 10,
+                  top: '50%',
+                  marginTop: -12,
+                  padding: 4,
+                }}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color="#666"
+                />
+              </Pressable>
+            </View>
+
 
             {/* Error */}
             {error ? (
