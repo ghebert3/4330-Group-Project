@@ -15,6 +15,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
+import BackHeader from '../components/BackHeader';
 
 type ChangePasswordNavProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -80,8 +81,14 @@ export default function ChangePasswordScreen() {
 
   return (
     <View style={styles.root}>
+      <BackHeader
+        title="Change Password"
+        backgroundColor={LSU_PURPLE}
+        textColor="#FFFFFF"
+      />
+
       <KeyboardAvoidingView
-        style={{ flex: 1, justifyContent: 'center' }}
+        style={styles.content}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.card}>
@@ -112,8 +119,7 @@ export default function ChangePasswordScreen() {
             </Pressable>
           </View>
 
-
-                    <Text style={styles.label}>Confirm password</Text>
+          <Text style={styles.label}>Confirm password</Text>
           <View style={styles.inputWrapper}>
             <TextInput
               value={confirm}
@@ -134,7 +140,6 @@ export default function ChangePasswordScreen() {
               />
             </Pressable>
           </View>
-
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -161,6 +166,9 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: LSU_PURPLE,
+  },
+  content: {
+    flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
@@ -218,7 +226,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-    inputWrapper: {
+  inputWrapper: {
     position: 'relative',
     marginBottom: 12,
   },

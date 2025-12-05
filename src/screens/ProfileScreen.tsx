@@ -16,7 +16,7 @@ import AnimatedTag from "../components/AnimatedTag";
 import { useFonts } from "expo-font";
 import FadeInView from "../components/FadeInView";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
 
 const IMG_TOP =
@@ -24,8 +24,41 @@ const IMG_TOP =
 const IMG_BACKGROUND =
   "https://www.figma.com/api/mcp/asset/d0b31084-1d39-4440-a66f-5c1be288ce59";
 
+const INTEREST_OPTIONS = [
+  "Intramural sports",
+  "Gym",
+  "Greek life",
+  "Gaming",
+  "Music",
+  "Concerts",
+  "Cooking",
+  "Photography",
+  "Travel",
+  "Study groups",
+  "Entrepreneurship",
+  "Volunteering",
+  "Parties",
+  "Coffee",
+  "Reading",
+  "Movies",
+];
+
+
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
+
+  const route = useRoute<any>();
+
+  useEffect(() => {
+    const params = (route.params ?? {}) as { openSettings?: boolean };
+
+    if (params.openSettings) {
+      openSettings();
+      // clear the flag so it doesn’t re-open on every render
+      navigation.setParams({ openSettings: false });
+    }
+  }, [route.params]);
+
 
   /* ----- STATE ----- */
   const [profilePic, setProfilePic] = useState<string | null>(null);
@@ -125,6 +158,12 @@ export default function ProfileScreen() {
   const [bio, setBio] = useState("");
   const [editBio, setEditBio] = useState("");
 
+  const [hometown, setHometown] = useState("");
+  const [hometownSearch, setHometownSearch] = useState("");
+  const [hometownModal, setHometownModal] = useState(false);
+
+  const [interestsModal, setInterestsModal] = useState(false);
+
   const [connections] = useState<
     { id: string; name: string; avatar: string; major: string }[]
   >([]);
@@ -149,9 +188,16 @@ export default function ProfileScreen() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("display_name, bio, tags, looking_for, avatar_url")
+        .select("display_name, bio, tags, looking_for, avatar_url, hometown")
         .eq("id", user.id)
         .single();
+
+      if (data) {
+        setName(data.display_name ?? "");
+        setBio(data.bio ?? "");
+        setHometown(data.hometown ?? "");
+        setTags(data.tags ?? []);
+      }
 
       if (error) {
         console.error("Error loading profile:", error);
@@ -163,6 +209,7 @@ export default function ProfileScreen() {
       setTags(data.tags ?? []);
       setLookingForItems(data.looking_for ?? []);
       setProfilePic(data.avatar_url ?? null);
+      setHometown(data.hometown ?? "");
     } catch (err) {
       console.error("Unexpected error loading profile:", err);
     } finally {
@@ -179,6 +226,7 @@ export default function ProfileScreen() {
         p_bio: bio,
         p_tags: tags,
         p_looking_for: lookingForItems,
+        p_hometown: hometown,
       });
 
       if (error) {
@@ -409,6 +457,37 @@ export default function ProfileScreen() {
     }
   }
 
+    function toggleInterest(item: string) {
+    setTags((prev) =>
+      prev.includes(item)
+        ? prev.filter((t) => t !== item)
+        : [...prev, item]
+    );
+  }
+
+  function addCustomTag() {
+    const trimmed = newTag.trim();
+    if (!trimmed) return;
+    setTags((prev) =>
+      prev.includes(trimmed) ? prev : [...prev, trimmed]
+    );
+    setNewTag("");
+  }
+
+  async function saveTagsToSupabase() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({ tags })
+        .eq("id", user.id);
+    }
+    setTagModal(false);
+  }
+
+
   /* ----- VIEW/EDIT PHOTO ----- */
   function openPhoto(index: number) {
     const uri = photos[index]?.uri;
@@ -572,12 +651,10 @@ export default function ProfileScreen() {
   }
 
   // Updated: only updates local state, no Supabase call
-  function saveNameEdit() {
-    if (editName.trim().length > 0) {
-      setName(editName.trim());
-    }
-    setNameEditModal(false);
-  }
+  async function saveNameEdit() {
+  setName(editName.trim());
+  setNameEditModal(false);
+}
 
   function openBioEdit() {
     setEditBio(bio);
@@ -641,9 +718,13 @@ export default function ProfileScreen() {
     <FadeInView style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
         {/* SETTINGS ICON */}
-        <Pressable style={styles.settingsIcon} onPress={openSettings}>
-          <Ionicons name="settings-outline" size={26} color="#555" />
+        <Pressable
+          style={styles.settingsIcon}
+          onPress={() => navigation.navigate("ProfileOverview")}
+        >
+          <Ionicons name="menu-outline" size={30} color="#555" />
         </Pressable>
+
 
       <Pressable
         style={{ position: "absolute", top: 50, left: 20, padding: 6 }}
@@ -678,65 +759,51 @@ export default function ProfileScreen() {
         </Pressable>
       )}
 
-      {/* TAGS */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
-        {tags.map((tag, index) => (
-      <AnimatedTag key={`${tag}-${index}`} label={tag} />
-        ))}
-
-        {/* Add Tag Button */}
-        <Pressable
-          style={styles.addTagButton}
-          onPress={() => setTagModal(true)}
-        >
-          <Text style={{ color: "#555", fontFamily: "CherryBomb" }}>+ Tag</Text>
-        </Pressable>
-      </View>
-
-      {/* LOOKING FOR */}
-      <View style={styles.sectionBox}>
-        <Text style={styles.sectionTitle}>Looking for</Text>
-
-        <View style={styles.lookingForContainer}>
-          {lookingForItems.map((item, i) => (
-            <View key={i} style={styles.lookingForItem}>
-              <Text style={styles.lookingForText}>{item}</Text>
-              <Pressable
-                onPress={() => removeLookingFor(i)}
-                style={styles.removeBtn}
-              >
-                <Text style={styles.removeBtnText}>×</Text>
-              </Pressable>
-            </View>
-          ))}
-          <Pressable
-            style={styles.addLookingForBtn}
-            onPress={() => setLookingForModal(true)}
-          >
-            <Text style={{ color: "#555", fontFamily: "CherryBomb" }}>
-              + Add
-            </Text>
-          </Pressable>
+        {/* STATS – now appears first */}
+        <View style={[styles.sectionBox, { marginTop: 18 }]}>
+          <View style={styles.statsRow}>
+            <Stat number="0" label="Whirls" />
+            <Pressable onPress={() => setConnectionsModal(true)}>
+              <View style={styles.statBlock}>
+                <Text style={styles.statNumber}>{connections.length}</Text>
+                <Text
+                  style={[styles.statLabel, { color: "#5903C3" }]}
+                >
+                  Campus Connections
+                </Text>
+              </View>
+            </Pressable>
+            <Stat number="0" label="People met" />
+          </View>
         </View>
-      </View>
 
-      {/* STATS */}
-      <View style={styles.sectionBox}>
-        <View style={styles.statsRow}>
-          <Stat number="0" label="Whirls" />
-          <Pressable onPress={() => setConnectionsModal(true)}>
-            <View style={styles.statBlock}>
-              <Text style={styles.statNumber}>{connections.length}</Text>
-              <Text
-                style={[styles.statLabel, { color: "#5903C3" }]}
-              >
-                Campus Connections
+        {/* LOOKING FOR – now comes after stats */}
+        <View style={styles.sectionBox}>
+          <Text style={styles.sectionTitle}>Looking for</Text>
+
+          <View style={styles.lookingForContainer}>
+            {lookingForItems.map((item, i) => (
+              <View key={i} style={styles.lookingForItem}>
+                <Text style={styles.lookingForText}>{item}</Text>
+                <Pressable
+                  onPress={() => removeLookingFor(i)}
+                  style={styles.removeBtn}
+                >
+                  <Text style={styles.removeBtnText}>×</Text>
+                </Pressable>
+              </View>
+            ))}
+
+            <Pressable
+              style={styles.addLookingForBtn}
+              onPress={() => setLookingForModal(true)}
+            >
+              <Text style={{ color: "#555", fontFamily: "CherryBomb" }}>
+                + Add
               </Text>
-            </View>
-          </Pressable>
-          <Stat number="0" label="People met" />
+            </Pressable>
+          </View>
         </View>
-      </View>
 
       {/* PHOTO ROW (click to enlarge) */}
       <View style={styles.photoRow}>
@@ -908,6 +975,151 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
+        {/* HOMETOWN MODAL */}
+      <Modal visible={hometownModal} transparent animationType="fade">
+        <View style={styles.modalCenter}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Choose your hometown</Text>
+            <Text style={styles.inputLabel}>
+              Type a city, state, or country.
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: "#eee",
+                borderRadius: 10,
+                paddingHorizontal: 10,
+                marginTop: 8,
+              }}
+            >
+              <Ionicons name="search" size={18} color="#777" />
+              <TextInput
+                value={hometownSearch}
+                onChangeText={setHometownSearch}
+                placeholder="Baton Rouge, LA"
+                style={{
+                  flex: 1,
+                  paddingVertical: 8,
+                  marginLeft: 6,
+                  fontFamily: "CherryBomb",
+                }}
+              />
+            </View>
+
+            {/* For now we just use the typed text.
+                Later you can plug in Google Places here. */}
+
+            <View style={styles.modalBtnRow}>
+              <Pressable
+                style={styles.modalBtnCancel}
+                onPress={() => {
+                  setHometownModal(false);
+                  setSettingsModal(true);
+                }}
+              >
+                <Text style={styles.modalBtnCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={styles.modalBtn}
+                onPress={() => {
+                  setHometown(hometownSearch.trim());
+                  setHometownModal(false);
+                  setSettingsModal(true);
+                }}
+              >
+                <Text style={styles.modalBtnText}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+                {/* INTERESTS PICKER MODAL */}
+          <Modal visible={interestsModal} transparent animationType="fade">
+            <View style={styles.modalCenter}>
+              <View style={styles.modalBox}>
+                <Text style={styles.modalTitle}>Choose your interests</Text>
+                <Text style={styles.inputLabel}>
+                  Tap to add or remove. These show on your profile.
+                </Text>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    marginTop: 12,
+                    gap: 8,
+                  }}
+                >
+                  {INTEREST_OPTIONS.map((label) => {
+                    const selected = tags.includes(label);
+                    return (
+                      <Pressable
+                        key={label}
+                        onPress={() => {
+                          setTags((prev) =>
+                            selected
+                              ? prev.filter((t) => t !== label)
+                              : [...prev, label]
+                          );
+                        }}
+                        style={{
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                          borderRadius: 999,
+                          borderWidth: 1,
+                          borderColor: selected ? "#5903C3" : "#ddd",
+                          backgroundColor: selected ? "#EEE5FF" : "#fff",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: "CherryBomb",
+                            color: selected ? "#461D7C" : "#555",
+                          }}
+                        >
+                          {label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                {/* show currently selected as chips */}
+                {tags.length > 0 && (
+                  <View style={{ marginTop: 16 }}>
+                    <Text style={styles.inputLabel}>Selected</Text>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        flexWrap: "wrap",
+                        marginTop: 6,
+                        gap: 6,
+                      }}
+                    >
+                      {tags.map((t, idx) => (
+                        <AnimatedTag key={`${t}-${idx}`} label={t} />
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                <View style={styles.modalBtnRow}>
+                  <Pressable
+                    style={styles.modalBtnCancel}
+                    onPress={() => {
+                      setInterestsModal(false);
+                      setSettingsModal(true);
+                    }}
+                  >
+                    <Text style={styles.modalBtnCancelText}>Done</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
+
       {/* BIO EDIT BUBBLE */}
       <Modal visible={bioEditModal} transparent animationType="fade">
         <View style={styles.modalCenter}>
@@ -917,11 +1129,11 @@ export default function ProfileScreen() {
               value={editBio}
               onChangeText={setEditBio}
               placeholder="A sentence or two about you"
-              style={[styles.bubbleInput, { height: 90 }]}
+              style={[styles.bubbleInput, { height: 120 }]}
               multiline
-              maxLength={160}
+              maxLength={400}
             />
-            <Text style={styles.bioCount}>{editBio.length}/160</Text>
+            <Text style={styles.bioCount}>{editBio.length}/400</Text>
             <View style={styles.bubbleBtnRow}>
               <Pressable
                 style={styles.modalIconDelete}
@@ -983,31 +1195,74 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* TAG MODAL (Add new) */}
+      {/* INTERESTS / TAGS MODAL */}
       <Modal visible={tagModal} transparent animationType="fade">
         <View style={styles.modalCenter}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Add a new tag</Text>
-            <TextInput
-              value={newTag}
-              onChangeText={setNewTag}
-              placeholder="ex. Chess, Basketball"
-              style={styles.inputField}
-            />
+          <View style={[styles.modalBox, { maxHeight: "75%" }]}>
+            <Text style={styles.modalTitle}>Choose your interests</Text>
+            <Text style={{ fontSize: 12, color: "#777", marginBottom: 8 }}>
+              Tap to select or deselect. These help people see what you’re into.
+            </Text>
+
+            <ScrollView>
+              <View style={styles.chipGrid}>
+                {INTEREST_OPTIONS.map((item) => {
+                  const isActive = tags.includes(item);
+                  return (
+                    <Pressable
+                      key={item}
+                      onPress={() => toggleInterest(item)}
+                      style={[
+                        styles.chip,
+                        isActive && styles.chipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          isActive && styles.chipTextActive,
+                        ]}
+                      >
+                        {item}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {/* Optional: custom interest input */}
+              <Text style={styles.settingsSectionTitle}>Custom interest</Text>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <TextInput
+                  value={newTag}
+                  onChangeText={setNewTag}
+                  placeholder="ex. Anime, Chess"
+                  style={[styles.inputField, { flex: 1, marginRight: 8 }]}
+                />
+                <Pressable style={styles.modalBtn} onPress={addCustomTag}>
+                  <Text style={styles.modalBtnText}>Add</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+
             <View style={styles.modalBtnRow}>
               <Pressable
                 style={styles.modalBtnCancel}
                 onPress={() => setTagModal(false)}
               >
-                <Text style={styles.modalBtnCancelText}>Cancel</Text>
+                <Text style={styles.modalBtnText}>Close</Text>
               </Pressable>
-              <Pressable style={styles.modalBtn} onPress={addTag}>
-                <Text style={styles.modalBtnText}>Add</Text>
+              <Pressable
+                style={styles.modalBtn}
+                onPress={saveTagsToSupabase}
+              >
+                <Text style={styles.modalBtnText}>Save</Text>
               </Pressable>
             </View>
           </View>
         </View>
       </Modal>
+
 
       {/* EDIT TAG MODAL */}
       <Modal visible={editTagModal} transparent animationType="fade">
@@ -1103,51 +1358,59 @@ export default function ProfileScreen() {
       </Modal>
 
       {/* SETTINGS MODAL */}
-      <Modal visible={settingsModal} transparent animationType="fade">
-        <View style={styles.modalCenter}>
-          <View style={styles.modalBox}>
+      <Modal visible={settingsModal} transparent animationType="slide">
+        <View style={styles.settingsSheetContainer}>
+          <View style={[styles.modalBox, styles.settingsSheet]}>
             <View style={styles.connectionsHeader}>
-              <Text style={styles.modalTitle}>Settings</Text>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
               <Pressable
                 onPress={() => setSettingsModal(false)}
                 style={styles.closeBtn}
               >
-                <Text style={styles.closeBtnText}>✕</Text>
+                <Ionicons name="chevron-down" size={22} color="#666" />
               </Pressable>
             </View>
 
-            <View style={styles.settingsContent}>
-              <Pressable
-                style={styles.settingsRow}
-                onPress={openNameEdit}
-              >
+            <ScrollView
+              style={{ maxHeight: 420 }}
+              contentContainerStyle={{ paddingBottom: 16 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* PERSONAL INFO */}
+              <Text style={[styles.sectionTitle, { marginTop: 4 }]}>
+                Personal Info
+              </Text>
+
+              {/* Name row */}
+              <Pressable style={styles.settingsRow} onPress={openNameEdit}>
                 <View>
-                  <Text style={styles.settingsRowLabel}>
-                    Change display name
-                  </Text>
+                  <Text style={styles.settingsRowLabel}>Name</Text>
                   <Text style={styles.settingsRowValue}>
-                    {name ? name : "Not set"}
+                    {name || "Add name"}
                   </Text>
                 </View>
+                <Ionicons name="chevron-forward" size={18} color="#999" />
               </Pressable>
 
+              {/* Hometown row */}
               <Pressable
                 style={styles.settingsRow}
-                onPress={openBioEdit}
+                onPress={() => {
+                  setHometownSearch(hometown);
+                  setSettingsModal(false);
+                  setHometownModal(true);
+                }}
               >
                 <View>
-                  <Text style={styles.settingsRowLabel}>Change bio</Text>
+                  <Text style={styles.settingsRowLabel}>Hometown</Text>
                   <Text style={styles.settingsRowValue}>
-                    {bio
-                      ? bio.length > 60
-                        ? bio.slice(0, 57) + "..."
-                        : bio
-                      : "Add a short bio"}
+                    {hometown || "Add hometown"}
                   </Text>
                 </View>
+                <Ionicons name="chevron-forward" size={18} color="#999" />
               </Pressable>
 
-              {/* View Email (non-pressable) */}
+              {/* Email row (read-only) */}
               <View style={styles.settingsRow}>
                 <View>
                   <Text style={styles.settingsRowLabel}>Email</Text>
@@ -1157,26 +1420,64 @@ export default function ProfileScreen() {
                 </View>
               </View>
 
-              {/* Reset Password */}
+              {/* BIO */}
+              <Text style={styles.sectionTitle}>Bio</Text>
+              <Pressable
+                style={styles.settingsRow}
+                onPress={openBioEdit}
+              >
+                <View>
+                  <Text style={styles.settingsRowLabel}>About you</Text>
+                  <Text style={styles.settingsRowValue}>
+                    {bio
+                      ? bio.length > 60
+                        ? bio.slice(0, 57) + "..."
+                        : bio
+                      : "Add a short bio"}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#999" />
+              </Pressable>
+
+              {/* INTERESTS */}
+              <Text style={styles.sectionTitle}>Interests</Text>
+              <Pressable
+                style={styles.settingsRow}
+                onPress={() => {
+                  setSettingsModal(false);
+                  setInterestsModal(true);
+                }}
+              >
+                <View>
+                  <Text style={styles.settingsRowLabel}>Tags / Interests</Text>
+                  <Text style={styles.settingsRowValue}>
+                    {tags.length > 0 ? tags.join(" • ") : "Add interests"}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#999" />
+              </Pressable>
+
+              {/* ACCOUNT */}
+              <Text style={styles.sectionTitle}>Account</Text>
+
               <Pressable
                 style={styles.settingsRow}
                 onPress={handleResetPassword}
               >
-                <View>
-                  <Text
-                    style={[
-                      styles.settingsRowLabel,
-                      { color: "#e74c3c" },
-                    ]}
-                  >
-                    Reset password
-                  </Text>
-                </View>
+                <Text
+                  style={[styles.settingsRowLabel, { color: "#e74c3c" }]}
+                >
+                  Reset password
+                </Text>
               </Pressable>
-              {/* Bottom Buttons Row */}
+
+              {/* Bottom buttons */}
               <View style={styles.settingsBottomRow}>
                 <Pressable
-                  style={[styles.bottomButtonLeft, isSavingProfile && { opacity: 0.7 }]}
+                  style={[
+                    styles.bottomButtonLeft,
+                    isSavingProfile && { opacity: 0.7 },
+                  ]}
                   onPress={saveProfile}
                   disabled={isSavingProfile}
                 >
@@ -1185,11 +1486,14 @@ export default function ProfileScreen() {
                   </Text>
                 </Pressable>
 
-                <Pressable style={styles.bottomButtonRight} onPress={handleSignOut}>
+                <Pressable
+                  style={styles.bottomButtonRight}
+                  onPress={handleSignOut}
+                >
                   <Text style={styles.bottomButtonText}>Sign Out</Text>
                 </Pressable>
               </View>
-            </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1337,28 +1641,60 @@ saveButtonText: {
     fontFamily: "CherryBomb",
   },
   /* Settings option rows */
-  settingsRow: {
-    width: "100%",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    settingsContent: {
+    paddingVertical: 8,
   },
-  settingsContent: {
-    width: "100%",
-    gap: 4, // subtle vertical spacing between rows
-  },
-  settingsRowLabel: {
+
+  settingsSectionTitle: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#222",
-    fontFamily: "CherryBomb",
+    color: "#555",
+    marginBottom: 6,
   },
+
+  settingsCard: {
+    backgroundColor: "#F6F6F8",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginBottom: 18,
+  },
+
+  settingsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "#E2E2E6",
+  },
+
+    settingsSheetContainer: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.4)", // dimmed backdrop
+  },
+
+  settingsSheet: {
+    width: "100%",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    alignSelf: "stretch",
+  },
+
+
+  settingsRowLabel: {
+    fontSize: 14,
+    color: "#333",
+    fontWeight: "500",
+  },
+
   settingsRowValue: {
     fontSize: 13,
-    color: "#666",
-    marginTop: 4,
-    fontFamily: "CherryBomb",
+    color: "#777",
+    maxWidth: 190,
   },
   /* Small bubble edit modal */
   smallBubble: {
@@ -1674,6 +2010,23 @@ saveButtonText: {
   closeBtn: {
     padding: 5,
   },
+
+  searchBar: {
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#F3F3F6",
+  borderRadius: 10,
+  paddingHorizontal: 10,
+  paddingVertical: 6,
+  marginTop: 10,
+},
+
+searchInput: {
+  flex: 1,
+  marginLeft: 6,
+  fontSize: 14,
+  color: "#333",
+},
   closeBtnText: {
     fontSize: 20,
     color: "#666",
@@ -1778,6 +2131,35 @@ saveButtonText: {
     height: 150,
     borderRadius: 8,
     marginBottom: 10,
+  },
+    chipGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 12,
+  },
+
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#DDD",
+    backgroundColor: "#FFF",
+  },
+
+  chipActive: {
+    backgroundColor: "#5903C3",
+    borderColor: "#5903C3",
+  },
+
+  chipText: {
+    fontSize: 13,
+    color: "#555",
+  },
+
+  chipTextActive: {
+    color: "#FFF",
   },
 // AFTER
 signOutSection: {
