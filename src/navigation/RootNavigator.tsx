@@ -4,19 +4,15 @@ import { NavigationContainer } from '@react-navigation/native';
 import { navigationRef } from '../navigation/navigationRef';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+
 import MeetupsScreen from '../screens/meetups';
 import MeetupsLoading from '../screens/MeetupsLoading';
 import DiscoverScreen from '../screens/DiscoverScreen';
-import { Ionicons } from '@expo/vector-icons';
-import * as Linking from 'expo-linking';
-import WhirlIcon from '../../assets/icons/whirl.png';
+import DMThreadScreen from '../screens/DMThreadScreen';
+import DMListScreen from '../screens/DMListScreen';
+import DMNewChatScreen from '../screens/DMNewChatScreen';
 
-import type {
-  RootStackParamList,
-  AppTabParamList,
-} from '../navigation/types';
-
-// Screens
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -28,35 +24,34 @@ import OnboardingScreen from '../screens/OnboardingScreen';
 import ProfileOverviewScreen from "../screens/ProfileOverviewScreen";
 import EditProfileScreen from '../screens/EditProfileScreen';
 
+import WhirlIcon from '../../assets/icons/whirl.png';
+
+import type {
+  RootStackParamList,
+  AppTabParamList,
+} from '../navigation/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<AppTabParamList>();
+
 const MeetupsStack = createNativeStackNavigator();
 
 const LSU_PURPLE = '#461D7C';
 
-const linking = {
-  prefixes: [Linking.createURL('/'), 'whirl://'],
-  config: {
-    screens: {
-      Startup: 'startup',
-      Login: 'login',
-      SignUp: 'signup',
-      Restart: 'restart',
-      ChangePassword: 'reset-password',
-      Onboarding: 'onboarding',
-      AppTabs: {
-        screens: {
-          Home: 'home',
-          Search: 'search',
-          Discover: 'discover',
-          Meetups: 'meetups',
-          Profile: 'profile',
-        },
-      },
-    },
-  },
-};
+function MeetupsStackNavigator() {
+  return (
+    <MeetupsStack.Navigator screenOptions={{ headerShown: false }}>
+      <MeetupsStack.Screen
+        name="MeetupsLoading"
+        component={MeetupsLoading}
+      />
+      <MeetupsStack.Screen
+        name="MeetupsMain"
+        component={MeetupsScreen}
+      />
+    </MeetupsStack.Navigator>
+  );
+}
 
 function AppTabs() {
   return (
@@ -71,8 +66,8 @@ function AppTabs() {
               <Image
                 source={WhirlIcon}
                 style={{
-                    width: focused ? size + 8 : size + 6,
-                    height: focused ? size + 8 : size + 6,
+                  width: focused ? size + 8 : size + 6,
+                  height: focused ? size + 8 : size + 6,
                   tintColor: focused ? LSU_PURPLE : color,
                   resizeMode: 'contain',
                 }}
@@ -86,8 +81,8 @@ function AppTabs() {
             case 'Home':
               iconName = focused ? 'home' : 'home-outline';
               break;
-            case 'Search':
-              iconName = focused ? 'search' : 'search-outline';
+            case 'Messages':
+              iconName = focused ? 'chatbubbles-sharp' : 'chatbubble-outline';
               break;
             case 'Meetups':
               iconName = focused ? 'cloud' : 'cloud-outline';
@@ -110,7 +105,7 @@ function AppTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Search" component={HomeScreen} />
+      <Tab.Screen name="Messages" component={DMListScreen} />
       <Tab.Screen name="Discover" component={DiscoverScreen} />
       <Tab.Screen name="Meetups" component={MeetupsStackNavigator} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
@@ -118,30 +113,15 @@ function AppTabs() {
   );
 }
 
-function MeetupsStackNavigator() {
-  return (
-    <MeetupsStack.Navigator screenOptions={{ headerShown: false }}>
-      <MeetupsStack.Screen
-        name="MeetupsLoading"
-        component={MeetupsLoading}
-      />
-      <MeetupsStack.Screen
-        name="MeetupsMain"
-        component={MeetupsScreen}
-      />
-    </MeetupsStack.Navigator>
-  );
-}
-
 export default function RootNavigator() {
   return (
-    <NavigationContainer ref={navigationRef} linking={linking}>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         screenOptions={{ headerShown: false }}
         initialRouteName="Startup"
       >
+        {/* Startup / Auth */}
         <Stack.Screen name="Startup" component={StartupScreen} />
-
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Restart" component={RestartScreen} />
@@ -152,7 +132,12 @@ export default function RootNavigator() {
 />
 
 
+        {/* Main app (tabs) */}
         <Stack.Screen name="AppTabs" component={AppTabs} />
+
+        {/* DM stack screens */}
+        <Stack.Screen name="DMThread" component={DMThreadScreen} />
+        <Stack.Screen name="DMNewChat" component={DMNewChatScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

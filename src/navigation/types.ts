@@ -8,6 +8,8 @@ export type RootStackParamList = {
   Onboarding: undefined;
   ProfileOverview: undefined;
   EditProfile: undefined;
+  DMThread: { conversationId: number };
+  DMNewChat: undefined; 
 };
 
 export type AuthStackParamList = {
@@ -17,7 +19,7 @@ export type AuthStackParamList = {
 
 export type AppTabParamList = {
   Home: undefined;
-  Search: undefined;
+  Messages: undefined;
   Discover: undefined;
   Meetups: undefined;
   Profile: undefined;

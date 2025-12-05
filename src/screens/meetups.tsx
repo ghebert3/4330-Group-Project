@@ -1,10 +1,25 @@
 import React, { useMemo, useState } from 'react';
-import {View,Text,StyleSheet,Dimensions,FlatList,TouchableOpacity,Image,Modal,TextInput,Alert, } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  Modal,
+  TextInput,
+  Alert,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRoute } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import FadeInView from '../components/FadeInView';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 
 const { width } = Dimensions.get('window');
 
@@ -29,6 +44,7 @@ type Meetup = {
   startsAt: string;
   host: string;
   participantEmails: string[];
+  endsAt?: string | null;
 };
 
 const INITIAL_MEETUPS: Meetup[] = [
@@ -43,6 +59,7 @@ const INITIAL_MEETUPS: Meetup[] = [
     startsAt: new Date().toISOString(),
     host: '',
     participantEmails: [],
+    endsAt: null,
   },
   {
     id: 'demo-2',
@@ -55,6 +72,7 @@ const INITIAL_MEETUPS: Meetup[] = [
     startsAt: new Date().toISOString(),
     host: '',
     participantEmails: [],
+    endsAt: null,
   },
   {
     id: 'demo-3',
@@ -67,6 +85,7 @@ const INITIAL_MEETUPS: Meetup[] = [
     startsAt: new Date().toISOString(),
     host: '',
     participantEmails: [],
+    endsAt: null,
   },
 ];
 
@@ -361,6 +380,16 @@ export default function MeetupsScreen() {
   const [newLocation, setNewLocation] = useState('');
   const [newDescription, setNewDescription] = useState('');
 
+  const [newDate, setNewDate] = useState('');
+  const [newTime, setNewTime] = useState('');
+  const [newEndTime, setNewEndTime] = useState('');
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const isIOS = Platform.OS === 'ios';
+
+
   const [currentUserId, setCurrentUserId] = useState<string | null>(
     routeParams.currentUserId ?? null
   );
@@ -368,13 +397,10 @@ export default function MeetupsScreen() {
   const [participants, setParticipants] = useState<{ id: string; email: string }[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
 
-  const [newDate, setNewDate] = useState('');
-  const [newTime, setNewTime] = useState('');
-
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedMeetup, setSelectedMeetup] = useState<Meetup | null>(null);
 
-    // ----- REPORTING STATE -----
+  //  REPORTING STATE 
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [reportMeetupId, setReportMeetupId] = useState<string | null>(null);
   const [reportMeetupTitle, setReportMeetupTitle] = useState<string>('');
@@ -411,11 +437,11 @@ export default function MeetupsScreen() {
     }
 
     const { error } = await supabase.from('reports').insert({
-      reporter: user.id,                   
-      meetup_id: numericMeetupId,           
-      reason: reportReason,                 
-      category: reportReason,             
-      description: reportDetails.trim() || null, 
+      reporter: user.id,
+      meetup_id: numericMeetupId,
+      reason: reportReason,
+      category: reportReason,
+      description: reportDetails.trim() || null,
     });
 
     if (error) {
@@ -432,7 +458,6 @@ export default function MeetupsScreen() {
     Alert.alert('Thank you', 'Your report has been submitted.');
   }
 
-
   const ItemSep = useMemo(() => <View style={{ height: 18 }} />, []);
 
   const handleCreatePress = () => {
@@ -442,6 +467,7 @@ export default function MeetupsScreen() {
     setNewDescription('');
     setNewDate('');
     setNewTime('');
+    setNewEndTime('');
     setCreateOpen(true);
   };
 
@@ -539,6 +565,38 @@ export default function MeetupsScreen() {
       return;
     }
 
+    let endsAtIso: string | null = null;
+    if (newEndTime.trim()) {
+      const end24 = convertTo24h(newEndTime.trim());
+      if (!end24) {
+        Alert.alert(
+          'Invalid end time',
+          'Please use time format like "8:00 PM" or leave it blank.'
+        );
+        return;
+      }
+
+      const isoStartCandidate = `${dateTrimmed}T${time24}:00`;
+      const isoEndCandidate = `${dateTrimmed}T${end24}:00`;
+      const parsedStart = new Date(isoStartCandidate);
+      const parsedEnd = new Date(isoEndCandidate);
+
+      if (isNaN(parsedEnd.getTime())) {
+        Alert.alert('Invalid end time', 'Please double-check your end time.');
+        return;
+      }
+
+      if (parsedEnd <= parsedStart) {
+        Alert.alert(
+          'End time must be later',
+          'Please choose an end time after the start time, or leave it blank.'
+        );
+        return;
+      }
+
+      endsAtIso = parsedEnd.toISOString();
+    }
+
     if (isNaN(cap) || cap <= 0) {
       Alert.alert('Invalid capacity', 'Capacity must be a positive number.');
       return;
@@ -576,6 +634,7 @@ export default function MeetupsScreen() {
           location: trimmedLocation,
           max_capacity: cap,
           starts_at: startsAtIso,
+          ends_at: endsAtIso,  
         })
         .select()
         .single();
@@ -597,6 +656,7 @@ export default function MeetupsScreen() {
         startsAt: data.starts_at,
         host: data.host,
         participantEmails: [],
+        endsAt: data.ends_at ?? null,
       };
 
       setMeetups(prev => [created, ...prev]);
@@ -679,6 +739,45 @@ export default function MeetupsScreen() {
     }
   };
 
+  const handleDateChange = (_event: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === 'android') setShowDatePicker(false);
+    if (!date) return;
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    setNewDate(`${year}-${month}-${day}`);
+  };
+
+  const handleTimeChange = (_event: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === 'android') setShowTimePicker(false);
+    if (!date) return;
+
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+
+    const isPM = hours >= 12;
+    const hour12 = hours % 12 || 12;
+    const mm = String(minutes).padStart(2, '0');
+
+    setNewTime(`${hour12}:${mm} ${isPM ? 'PM' : 'AM'}`);
+  };
+
+  const handleEndTimeChange = (_event: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === 'android') setShowEndTimePicker(false);
+    if (!date) return;
+
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+
+    const isPM = hours >= 12;
+    const hour12 = hours % 12 || 12;
+    const mm = String(minutes).padStart(2, '0');
+
+    setNewEndTime(`${hour12}:${mm} ${isPM ? 'PM' : 'AM'}`);
+  };
+
   return (
     <FadeInView style={{ flex: 1 }}>
       <SafeAreaView style={styles.root}>
@@ -748,23 +847,74 @@ export default function MeetupsScreen() {
                 multiline
               />
 
-              <Text style={styles.modalLabel}>Date (YYYY-MM-DD)</Text>
-              <TextInput
+              <Text style={styles.modalLabel}>Date</Text>
+              <TouchableOpacity
                 style={styles.modalInput}
-                placeholder="2025-11-30"
-                placeholderTextColor="#888"
-                value={newDate}
-                onChangeText={setNewDate}
-              />
+                onPress={() => setShowDatePicker(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Choose meetup date"
+                accessibilityHint="Opens a calendar so you can pick the meetup date"
+              >
+                <Text style={{ color: newDate ? '#000' : '#888' }}>
+                  {newDate || 'Tap to pick a date'}
+                </Text>
+              </TouchableOpacity>
 
-              <Text style={styles.modalLabel}>Time (HH:MM AM/PM)</Text>
-              <TextInput
+              {showDatePicker && (
+                <DateTimePicker
+                  value={newDate ? new Date(newDate + 'T12:00:00') : new Date()}
+                   mode="date"
+                   display={isIOS ? 'inline' : 'calendar'}
+                   minimumDate={new Date()}
+                     onChange={handleDateChange}
+                       />
+)}
+
+              <Text style={styles.modalLabel}>Time</Text>
+              <TouchableOpacity
                 style={styles.modalInput}
-                placeholder="6:30 PM"
-                placeholderTextColor="#888"
-                value={newTime}
-                onChangeText={setNewTime}
-              />
+                onPress={() => setShowTimePicker(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Choose meetup time"
+                accessibilityHint="Opens a clock so you can pick the meetup time"
+              >
+                <Text style={{ color: newTime ? '#000' : '#888' }}>
+                  {newTime || 'Tap to pick a time'}
+                </Text>
+              </TouchableOpacity>
+
+             {showTimePicker && (
+            <DateTimePicker
+                 value={new Date()}
+                 mode="time"
+                 display={isIOS ? 'spinner' : 'clock'}
+                 onChange={handleTimeChange}
+               />
+              )}
+
+
+
+              <Text style={styles.modalLabel}>End time </Text>
+              <TouchableOpacity
+                style={styles.modalInput}
+                onPress={() => setShowEndTimePicker(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Choose meetup end time"
+                accessibilityHint="Opens a clock so you can pick when the meetup ends"
+              >
+                <Text style={{ color: newEndTime ? '#000' : '#888' }}>
+                  {newEndTime || 'Tap to pick an end time'}
+                </Text>
+              </TouchableOpacity>
+
+              {showEndTimePicker && (
+                <DateTimePicker
+                  value={new Date()}
+                  mode="time"
+                  display={isIOS ? 'spinner' : 'clock'}
+                  onChange={handleEndTimeChange}
+                />
+              )}
 
               <Text style={styles.modalLabel}>Max people</Text>
               <TextInput
@@ -796,84 +946,106 @@ export default function MeetupsScreen() {
         </Modal>
 
         {/* Meetup Details Modal */}
-<Modal
-  visible={detailsOpen}
-  transparent
-  animationType="fade"
-  onRequestClose={() => setDetailsOpen(false)}
->
-  <View style={styles.modalOverlay}>
-    <View style={styles.modalCard}>
-      {selectedMeetup && (
-        <>
-          <Text style={styles.modalTitle}>{selectedMeetup.title}</Text>
+        <Modal
+          visible={detailsOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setDetailsOpen(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              {selectedMeetup && (
+                <>
+                  <Text style={styles.modalTitle}>{selectedMeetup.title}</Text>
 
-          <Text style={styles.modalLabel}>Location</Text>
-          <Text style={styles.detailText}>{selectedMeetup.location}</Text>
+                  <Text style={styles.modalLabel}>Location</Text>
+                  <Text style={styles.detailText}>{selectedMeetup.location}</Text>
 
-          <Text style={styles.modalLabel}>Description</Text>
-          <Text style={styles.detailText}>{selectedMeetup.description}</Text>
+                  <Text style={styles.modalLabel}>Description</Text>
+                  <Text style={styles.detailText}>{selectedMeetup.description}</Text>
 
-          <Text style={styles.modalLabel}>When</Text>
-          <Text style={styles.detailText}>
-            {new Date(selectedMeetup.startsAt).toLocaleString()}
-          </Text>
+                  <Text style={styles.modalLabel}>When</Text>
+                  <Text style={styles.detailText}>
+                    {(() => {
+                      const start = new Date(selectedMeetup.startsAt);
+                      const dateStr = start.toLocaleDateString(undefined, {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                      });
+                      const startTimeStr = start.toLocaleTimeString(undefined, {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      });
 
-          <Text style={styles.modalLabel}>Spots</Text>
-          <Text style={styles.detailText}>
-            {selectedMeetup.currentCount}/{selectedMeetup.capacity} people
-            {selectedMeetup.joined ? ' (You joined)' : ''}
-          </Text>
+                      if (selectedMeetup.endsAt) {
+                        const end = new Date(selectedMeetup.endsAt);
+                        const endTimeStr = end.toLocaleTimeString(undefined, {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        });
+                        return `${dateStr} • ${startTimeStr} – ${endTimeStr}`;
+                      }
 
-          {currentUserId === selectedMeetup.host && (
-            <>
-              <Text style={styles.modalLabel}>Participants (emails)</Text>
-              {loadingParticipants && (
-                <Text style={styles.detailText}>Loading…</Text>
-              )}
-              {!loadingParticipants && participants.length === 0 && (
-                <Text style={styles.detailText}>Nobody has joined yet.</Text>
-              )}
-              {!loadingParticipants &&
-                participants.map(p => (
-                  <Text key={p.id} style={styles.detailText}>
-                    • {p.email}
+                      return `${dateStr} • ${startTimeStr}`;
+                    })()}
                   </Text>
-                ))}
-            </>
-          )}
 
-          <TouchableOpacity
-            style={styles.reportLink}
-            onPress={() => openReportModalForMeetup(selectedMeetup)}
-          >
-            <Text style={styles.reportLinkText}>Report this meetup</Text>
-          </TouchableOpacity>
+                  <Text style={styles.modalLabel}>Spots</Text>
+                  <Text style={styles.detailText}>
+                    {selectedMeetup.currentCount}/{selectedMeetup.capacity} people
+                    {selectedMeetup.joined ? ' (You joined)' : ''}
+                  </Text>
 
-          <View style={styles.modalButtonsRow}>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.modalCancel]}
-              onPress={() => setDetailsOpen(false)}
-            >
-              <Text style={styles.modalButtonText}>Close</Text>
-            </TouchableOpacity>
+                  {currentUserId === selectedMeetup.host && (
+                    <>
+                      <Text style={styles.modalLabel}>Participants (emails)</Text>
+                      {loadingParticipants && (
+                        <Text style={styles.detailText}>Loading…</Text>
+                      )}
+                      {!loadingParticipants && participants.length === 0 && (
+                        <Text style={styles.detailText}>Nobody has joined yet.</Text>
+                      )}
+                      {!loadingParticipants &&
+                        participants.map(p => (
+                          <Text key={p.id} style={styles.detailText}>
+                            • {p.email}
+                          </Text>
+                        ))}
+                    </>
+                  )}
 
-            <TouchableOpacity
-              style={[styles.modalButton, styles.modalCreate]}
-              onPress={handleJoinFromDetails}
-            >
-              <Text style={styles.modalButtonText}>
-                {selectedMeetup.joined ? 'Leave' : 'Join'}
-              </Text>
-            </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.reportLink}
+                    onPress={() => openReportModalForMeetup(selectedMeetup)}
+                  >
+                    <Text style={styles.reportLinkText}>Report this meetup</Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.modalButtonsRow}>
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.modalCancel]}
+                      onPress={() => setDetailsOpen(false)}
+                    >
+                      <Text style={styles.modalButtonText}>Close</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.modalCreate]}
+                      onPress={handleJoinFromDetails}
+                    >
+                      <Text style={styles.modalButtonText}>
+                        {selectedMeetup.joined ? 'Leave' : 'Join'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </View>
           </View>
-        </>
-      )}
-    </View>
-  </View>
-</Modal>
+        </Modal>
 
-
+        {/* Report Modal */}
         <Modal
           visible={reportModalVisible}
           transparent
@@ -893,7 +1065,7 @@ export default function MeetupsScreen() {
               <Text style={styles.modalLabel}>Reason</Text>
               <View style={styles.reportReasonRow}>
                 {(['safety', 'harassment', 'spam', 'inappropriate', 'other'] as const).map(
-                  (reason) => (
+                  reason => (
                     <TouchableOpacity
                       key={reason}
                       style={[
@@ -943,7 +1115,7 @@ export default function MeetupsScreen() {
             </View>
           </View>
         </Modal>
-        </SafeAreaView>
+      </SafeAreaView>
     </FadeInView>
   );
 }
@@ -999,7 +1171,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
     color: '#444',
-    
   },
   modalInput: {
     borderWidth: 1,
@@ -1009,14 +1180,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: 'white',
     fontSize: 14,
-    
   },
   modalDescription: {
     marginTop: 8,
     fontSize: 14,
     color: '#4a3b3b',
     lineHeight: 20,
-    
   },
   detailText: {
     fontSize: 14,
