@@ -13,11 +13,13 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import AnimatedTag from "../components/AnimatedTag";
-import { useFonts } from "expo-font";
 import FadeInView from "../components/FadeInView";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
+import { useTheme } from '../theme';
+import type { Theme } from '../theme';
+
 
 const IMG_TOP =
   "https://www.figma.com/api/mcp/asset/b423224a-73b2-44b6-85f7-06dc37aea3a1";
@@ -43,12 +45,20 @@ const INTEREST_OPTIONS = [
   "Movies",
 ];
 
-const BG = '#F7EEDB';
-
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
-
   const route = useRoute<any>();
+  const { theme } = useTheme();
+  const styles = makeStyles(theme);
+
+  /* ----- COMPONENTS ----- */
+
+  const Stat = ({ number, label }: { number: string; label: string }) => (
+    <View style={styles.statBlock}>
+      <Text style={styles.statNumber}>{number}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
 
   useEffect(() => {
     const params = (route.params ?? {}) as { openSettings?: boolean };
@@ -723,7 +733,7 @@ export default function ProfileScreen() {
           style={styles.settingsIcon}
           onPress={() => navigation.navigate("ProfileOverview")}
         >
-          <Ionicons name="menu-outline" size={30} color="#555" />
+          <Ionicons name="menu-outline" size={30} color={theme.textSecondary} />
         </Pressable>
 
 
@@ -768,7 +778,7 @@ export default function ProfileScreen() {
               <View style={styles.statBlock}>
                 <Text style={styles.statNumber}>{connections.length}</Text>
                 <Text
-                  style={[styles.statLabel, { color: "#5903C3" }]}
+                  style={[styles.statLabel, { color: theme.accent}]}
                 >
                   Campus Connections
                 </Text>
@@ -799,7 +809,7 @@ export default function ProfileScreen() {
               style={styles.addLookingForBtn}
               onPress={() => setLookingForModal(true)}
             >
-              <Text style={{ color: "#555", fontFamily: "CherryBomb" }}>
+              <Text style={{ color: theme.textSecondary, fontFamily: "CherryBomb" }}>
                 + Add
               </Text>
             </Pressable>
@@ -835,7 +845,7 @@ export default function ProfileScreen() {
               setSelectedPhotoIndex(null);
             }}
           >
-            <Ionicons name="close" size={30} color="#fff" />
+            <Ionicons name="close" size={30} color={theme.card} />
           </Pressable>
           {selectedPhotoIndex !== null && (
             <View style={styles.photoModalContent}>
@@ -859,7 +869,7 @@ export default function ProfileScreen() {
                 style={styles.editPhotoBtn}
                 onPress={openEditPhoto}
               >
-                <Ionicons name="pencil" size={18} color="#fff" />
+                <Ionicons name="pencil" size={18} color={theme.card } />
                 <Text style={styles.editPhotoBtnText}>Edit</Text>
               </Pressable>
             </View>
@@ -960,7 +970,7 @@ export default function ProfileScreen() {
                   setSettingsModal(true);
                 }}
               >
-                <Ionicons name="close" size={20} color="#fff" />
+                <Ionicons name="close" size={20} color={theme.card} />
               </Pressable>
               <Pressable
                 style={styles.modalIconSave}
@@ -969,7 +979,7 @@ export default function ProfileScreen() {
                   setSettingsModal(true);
                 }}
               >
-                <Ionicons name="checkmark" size={22} color="#fff" />
+                <Ionicons name="checkmark" size={22} color={theme.card} />
               </Pressable>
             </View>
           </View>
@@ -988,13 +998,13 @@ export default function ProfileScreen() {
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                backgroundColor: "#eee",
+                backgroundColor: theme.card,
                 borderRadius: 10,
                 paddingHorizontal: 10,
                 marginTop: 8,
               }}
             >
-              <Ionicons name="search" size={18} color="#777" />
+              <Ionicons name="search" size={18} color={theme.textSecondary} />
               <TextInput
                 value={hometownSearch}
                 onChangeText={setHometownSearch}
@@ -1069,14 +1079,14 @@ export default function ProfileScreen() {
                           paddingVertical: 8,
                           borderRadius: 999,
                           borderWidth: 1,
-                          borderColor: selected ? "#5903C3" : "#ddd",
-                          backgroundColor: selected ? "#EEE5FF" : "#fff",
+                          borderColor: selected ? theme.accent : theme.border,
+                          backgroundColor: selected ? theme.accent : theme.card,
                         }}
                       >
                         <Text
                           style={{
                             fontFamily: "CherryBomb",
-                            color: selected ? "#461D7C" : "#555",
+                            color: selected ? theme.accent : theme.textSecondary,
                           }}
                         >
                           {label}
@@ -1143,7 +1153,7 @@ export default function ProfileScreen() {
                   setSettingsModal(true);
                 }}
               >
-                <Ionicons name="close" size={20} color="#fff" />
+                <Ionicons name="close" size={20} color={theme.card}/>
               </Pressable>
               <Pressable
                 style={styles.modalIconSave}
@@ -1152,7 +1162,7 @@ export default function ProfileScreen() {
                   setSettingsModal(true);
                 }}
               >
-                <Ionicons name="checkmark" size={22} color="#fff" />
+                <Ionicons name="checkmark" size={22} color={theme.card} />
               </Pressable>
             </View>
           </View>
@@ -1201,7 +1211,7 @@ export default function ProfileScreen() {
         <View style={styles.modalCenter}>
           <View style={[styles.modalBox, { maxHeight: "75%" }]}>
             <Text style={styles.modalTitle}>Choose your interests</Text>
-            <Text style={{ fontSize: 12, color: "#777", marginBottom: 8 }}>
+            <Text style={{ fontSize: 12, color: theme.textSecondary, marginBottom: 8 }}>
               Tap to select or deselect. These help people see what you’re into.
             </Text>
 
@@ -1368,7 +1378,7 @@ export default function ProfileScreen() {
                 onPress={() => setSettingsModal(false)}
                 style={styles.closeBtn}
               >
-                <Ionicons name="chevron-down" size={22} color="#666" />
+                <Ionicons name="chevron-down" size={22} color={theme.textSecondary} />
               </Pressable>
             </View>
 
@@ -1390,7 +1400,7 @@ export default function ProfileScreen() {
                     {name || "Add name"}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#999" />
+                <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
               </Pressable>
 
               {/* Hometown row */}
@@ -1408,7 +1418,7 @@ export default function ProfileScreen() {
                     {hometown || "Add hometown"}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#999" />
+                <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
               </Pressable>
 
               {/* Email row (read-only) */}
@@ -1437,7 +1447,7 @@ export default function ProfileScreen() {
                       : "Add a short bio"}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#999" />
+                <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
               </Pressable>
 
               {/* INTERESTS */}
@@ -1455,7 +1465,7 @@ export default function ProfileScreen() {
                     {tags.length > 0 ? tags.join(" • ") : "Add interests"}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#999" />
+                <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
               </Pressable>
 
               {/* ACCOUNT */}
@@ -1503,36 +1513,21 @@ export default function ProfileScreen() {
   );
 }
 
-/* ----- COMPONENTS ----- */
-
-const Stat = ({ number, label }: { number: string; label: string }) => (
-  <View style={styles.statBlock}>
-    <Text style={styles.statNumber}>{number}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </View>
-);
-
-const NavItem = ({ icon, label }: { icon: string; label: string }) => (
-  <View style={styles.navItem}>
-    <Text style={styles.navIcon}>{icon}</Text>
-    <Text style={styles.navLabel}>{label}</Text>
-  </View>
-);
-
 /* ----- STYLES ----- */
-const styles = StyleSheet.create({
+const makeStyles = (theme: Theme) =>
+StyleSheet.create({
   container: {
     padding: 20,
     paddingBottom: 150,
     alignItems: "center",
-    backgroundColor: BG,
+    backgroundColor: theme.background,
   },
 
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: BG,
+    backgroundColor: theme.background,
   },
 
   loadingBgWrapper: {
@@ -1567,7 +1562,7 @@ const styles = StyleSheet.create({
   },
 
   saveButton: {
-  backgroundColor: "#a87bd6",
+  backgroundColor: theme.background,
   paddingVertical: 10,
   borderRadius: 8,
   alignItems: "center",
@@ -1576,7 +1571,7 @@ const styles = StyleSheet.create({
 },
 
 saveButtonText: {
-  color: "#fff",
+  color: theme.card,
   fontWeight: "600",
   fontSize: 15,
   fontFamily: "CherryBomb",
@@ -1587,7 +1582,7 @@ saveButtonText: {
     height: 150,
     borderRadius: 100,
     borderWidth: 8,
-    borderColor: "#a87bd6",
+    borderColor: theme.accent,
     overflow: "hidden",
     marginTop: 50,
   },
@@ -1601,10 +1596,11 @@ saveButtonText: {
     fontWeight: "600",
     marginTop: 20,
     fontFamily: "CherryBomb",
+    color: theme.textPrimary,
   },
   bioText: {
     fontSize: 14,
-    color: "#444",
+    color: theme.textSecondary,
     marginTop: 8,
     textAlign: "center",
     paddingHorizontal: 20,
@@ -1615,7 +1611,7 @@ saveButtonText: {
   },
   bioPlaceholder: {
     fontSize: 14,
-    color: "#999",
+    color: theme.textSecondary,
     fontStyle: "italic",
     fontFamily: "CherryBomb",
   },
@@ -1652,12 +1648,12 @@ saveButtonText: {
   settingsSectionTitle: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#555",
+    color: theme.textSecondary,
     marginBottom: 6,
   },
 
   settingsCard: {
-    backgroundColor: "#F6F6F8",
+    backgroundColor: theme.card,
     borderRadius: 14,
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -1670,13 +1666,13 @@ saveButtonText: {
     alignItems: "center",
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#E2E2E6",
+    borderBottomColor: theme.textSecondary,
   },
 
     settingsSheetContainer: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.4)", // dimmed backdrop
+    backgroundColor: theme.card, // dimmed backdrop
   },
 
   settingsSheet: {
@@ -1691,19 +1687,19 @@ saveButtonText: {
 
   settingsRowLabel: {
     fontSize: 14,
-    color: "#333",
+    color: theme.textPrimary,
     fontWeight: "500",
   },
 
   settingsRowValue: {
     fontSize: 13,
-    color: "#777",
+    color: theme.textSecondary,
     maxWidth: 190,
   },
   /* Small bubble edit modal */
   smallBubble: {
     width: "88%",
-    backgroundColor: "#fff",
+    backgroundColor: theme.background,
     borderRadius: 14,
     padding: 16,
     alignItems: "center",
@@ -1712,7 +1708,7 @@ saveButtonText: {
   bubbleInput: {
     width: "100%",
     borderRadius: 10,
-    backgroundColor: "#f7f7f8",
+    backgroundColor: theme.background,
     padding: 10,
     fontSize: 15,
     fontFamily: "CherryBomb",
@@ -1732,7 +1728,7 @@ saveButtonText: {
     marginVertical: 20,
   },
   tag: {
-    backgroundColor: "#eee",
+    backgroundColor: theme.chipBg,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -1740,9 +1736,10 @@ saveButtonText: {
   tagText: {
     fontSize: 12,
     fontFamily: "CherryBomb",
+    color: "#eee",
   },
   addTagButton: {
-    backgroundColor: "#ddd",
+    backgroundColor: theme.chipBg,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -1755,13 +1752,14 @@ saveButtonText: {
     alignSelf: "flex-start",
     marginBottom: 10,
     fontFamily: "CherryBomb",
+    color: theme.textPrimary,
   },
   sectionBox: {
     width: "100%",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: theme.card,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: theme.border,
     padding: 15,
     marginBottom: 20,
   },
@@ -1772,7 +1770,7 @@ saveButtonText: {
     width: "100%",
   },
   lookingForItem: {
-    backgroundColor: "#dcdcdc",
+    backgroundColor: theme.chipBg,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
@@ -1781,11 +1779,11 @@ saveButtonText: {
     gap: 6,
   },
   lookingForText: {
-    color: "#444",
+    color: theme.textPrimary,
     fontFamily: "CherryBomb",
   },
   removeBtn: {
-    backgroundColor: "#bbb",
+    backgroundColor: theme.danger,
     width: 20,
     height: 20,
     borderRadius: 10,
@@ -1793,27 +1791,27 @@ saveButtonText: {
     justifyContent: "center",
   },
   removeBtnText: {
-    color: "#fff",
+    color: theme.textPrimary,
     fontSize: 14,
     fontWeight: "bold",
     lineHeight: 18,
     fontFamily: "CherryBomb",
   },
   addLookingForBtn: {
-    backgroundColor: "#eee",
+    backgroundColor: theme.chipBg,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
   },
   inputFake: {
-    backgroundColor: "#dcdcdc",
+    backgroundColor: theme.chipBg,
     width: "100%",
     padding: 12,
     borderRadius: 16,
     marginBottom: 25,
   },
   inputText: {
-    color: "#444",
+    color: theme.chipBg,
     fontFamily: "CherryBomb",
   },
 
@@ -1831,12 +1829,14 @@ saveButtonText: {
     fontSize: 20,
     fontWeight: "700",
     fontFamily: "CherryBomb",
+    color: theme.textPrimary,
   },
   statLabel: {
     fontSize: 12,
     marginTop: 3,
     textAlign: "center",
     fontFamily: "CherryBomb",
+    color: theme.textPrimary,
   },
 
   /* PHOTOS */
@@ -1857,14 +1857,14 @@ saveButtonText: {
   },
   addPhotoButton: {
     marginTop: 15,
-    backgroundColor: "#eee",
+    backgroundColor: theme.card,
     padding: 10,
     paddingHorizontal: 18,
     borderRadius: 10,
   },
   addPhotoText: {
     fontSize: 14,
-    color: "#444",
+    color: theme.textPrimary,
     fontFamily: "CherryBomb",
   },
 
@@ -1875,7 +1875,7 @@ saveButtonText: {
     width: "100%",
     marginTop: 40,
     borderTopWidth: 1,
-    borderColor: "#ccc",
+    borderColor: theme.border,
     paddingVertical: 10,
   },
   navItem: { alignItems: "center" },
@@ -1903,7 +1903,7 @@ saveButtonText: {
   },
   modalBox: {
     width: "85%",       // instead of 80% if you want it a bit wider
-    backgroundColor: "#fff",
+    backgroundColor: theme.chipBg,
     padding: 20,
     borderRadius: 16,
     gap: 10,
@@ -1912,6 +1912,7 @@ saveButtonText: {
     fontSize: 16,
     fontWeight: "600",
     fontFamily: "CherryBomb",
+    color: theme.textPrimary,
   },
   inputLabel: {
     fontSize: 14,

@@ -23,6 +23,7 @@ import ProfileScreen from '../screens/ProfileScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import ProfileOverviewScreen from "../screens/ProfileOverviewScreen";
 import EditProfileScreen from '../screens/EditProfileScreen';
+import { ThemeProvider, useTheme } from '../theme';
 
 import WhirlIcon from '../../assets/icons/whirl.png';
 
@@ -54,12 +55,18 @@ function MeetupsStackNavigator() {
 }
 
 function AppTabs() {
+  const { theme } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarStyle: { borderTopWidth: 1, borderTopColor: '#ddd' },
+        tabBarStyle: {
+          borderTopWidth: 1,
+          borderTopColor: theme.border,
+          backgroundColor: theme.card,
+        },
         tabBarIcon: ({ color, size, focused }) => {
           if (route.name === 'Discover') {
             return (
@@ -68,7 +75,7 @@ function AppTabs() {
                 style={{
                   width: focused ? size + 8 : size + 6,
                   height: focused ? size + 8 : size + 6,
-                  tintColor: focused ? LSU_PURPLE : color,
+                  tintColor: focused ? theme.accent : color,
                   resizeMode: 'contain',
                 }}
               />
@@ -96,11 +103,11 @@ function AppTabs() {
             <Ionicons
               name={iconName}
               size={size}
-              color={focused ? LSU_PURPLE : color}
+              color={focused ? theme.accent : color}
             />
           );
         },
-        tabBarActiveTintColor: LSU_PURPLE,
+        tabBarActiveTintColor: theme.accent,
         tabBarInactiveTintColor: '#777',
       })}
     >
@@ -115,30 +122,34 @@ function AppTabs() {
 
 export default function RootNavigator() {
   return (
-    <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator
-        screenOptions={{ headerShown: false }}
-        initialRouteName="Startup"
-      >
-        {/* Startup / Auth */}
-        <Stack.Screen name="Startup" component={StartupScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} />
-        <Stack.Screen name="Restart" component={RestartScreen} />
-        <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-        <Stack.Screen name="ProfileOverview" component={ProfileOverviewScreen} />
-        <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }}
-/>
+    <ThemeProvider>
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator
+          screenOptions={{ headerShown: false }}
+          initialRouteName="Startup"
+        >
+          {/* Startup / Auth */}
+          <Stack.Screen name="Startup" component={StartupScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="SignUp" component={SignUpScreen} />
+          <Stack.Screen name="Restart" component={RestartScreen} />
+          <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          <Stack.Screen name="ProfileOverview" component={ProfileOverviewScreen} />
+          <Stack.Screen
+            name="EditProfile"
+            component={EditProfileScreen}
+            options={{ headerShown: false }}
+          />
 
+          {/* Main app (tabs) */}
+          <Stack.Screen name="AppTabs" component={AppTabs} />
 
-        {/* Main app (tabs) */}
-        <Stack.Screen name="AppTabs" component={AppTabs} />
-
-        {/* DM stack screens */}
-        <Stack.Screen name="DMThread" component={DMThreadScreen} />
-        <Stack.Screen name="DMNewChat" component={DMNewChatScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
+          {/* DM stack screens */}
+          <Stack.Screen name="DMThread" component={DMThreadScreen} />
+          <Stack.Screen name="DMNewChat" component={DMNewChatScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ThemeProvider>
   );
 }
