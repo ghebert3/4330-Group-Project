@@ -5,6 +5,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRoute } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import FadeInView from '../components/FadeInView';
+import { Platform } from 'react-native';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 
 const { width } = Dimensions.get('window');
 
@@ -360,6 +364,8 @@ export default function MeetupsScreen() {
   const [newCapacity, setNewCapacity] = useState('10');
   const [newLocation, setNewLocation] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(
     routeParams.currentUserId ?? null
@@ -678,6 +684,38 @@ export default function MeetupsScreen() {
       Alert.alert('Error', 'Something went wrong. Please try again.');
     }
   };
+  const handleDateChange = (
+  _event: DateTimePickerEvent,
+  date?: Date,
+) => {
+  if (Platform.OS === 'android') setShowDatePicker(false);
+
+  if (!date) return;
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  setNewDate(`${year}-${month}-${day}`);
+};
+
+const handleTimeChange = (
+  _event: DateTimePickerEvent,
+  date?: Date,
+) => {
+  if (Platform.OS === 'android') setShowTimePicker(false);
+  if (!date) return;
+
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+
+  const isPM = hours >= 12;
+  const hour12 = hours % 12 || 12;
+  const mm = String(minutes).padStart(2, '0');
+
+  setNewTime(`${hour12}:${mm} ${isPM ? 'PM' : 'AM'}`);
+};
+
 
   return (
     <FadeInView style={{ flex: 1 }}>
@@ -748,23 +786,54 @@ export default function MeetupsScreen() {
                 multiline
               />
 
-              <Text style={styles.modalLabel}>Date (YYYY-MM-DD)</Text>
-              <TextInput
+              <Text style={styles.modalLabel}>Date</Text>
+                <TouchableOpacity
                 style={styles.modalInput}
-                placeholder="2025-11-30"
-                placeholderTextColor="#888"
-                value={newDate}
-                onChangeText={setNewDate}
-              />
+                onPress={() => setShowDatePicker(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Choose meetup date"
+                accessibilityHint="Opens a calendar so you can pick the meetup date"
+>
+  <Text style={{ color: newDate ? '#000' : '#888' }}>
+    {newDate || 'Tap to pick a date'}
+  </Text>
+</TouchableOpacity>
 
-              <Text style={styles.modalLabel}>Time (HH:MM AM/PM)</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="6:30 PM"
-                placeholderTextColor="#888"
-                value={newTime}
-                onChangeText={setNewTime}
-              />
+{showDatePicker && (
+  <DateTimePicker
+    value={
+      newDate
+        ? new Date(newDate + 'T12:00:00') 
+        : new Date()
+    }
+    mode="date"
+    display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
+    minimumDate={new Date()} 
+    onChange={handleDateChange}
+  />
+)}
+    <Text style={styles.modalLabel}>Time</Text>
+         <TouchableOpacity
+          style={styles.modalInput}
+            onPress={() => setShowTimePicker(true)}
+            accessibilityRole="button"
+           accessibilityLabel="Choose meetup time"
+           accessibilityHint="Opens a clock so you can pick the meetup time"
+          > 
+  <Text style={{ color: newTime ? '#000' : '#888' }}>
+    {newTime || 'Tap to pick a time'}
+  </Text>
+</TouchableOpacity>
+
+{showTimePicker && (
+  <DateTimePicker
+    value={new Date()}
+    mode="time"
+    display={Platform.OS === 'ios' ? 'spinner' : 'clock'}
+    onChange={handleTimeChange}
+  />
+)}
+
 
               <Text style={styles.modalLabel}>Max people</Text>
               <TextInput
