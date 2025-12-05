@@ -10,7 +10,9 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
+import AnimatedButton from '../components/AnimatedButton';
 import { useNavigation } from '@react-navigation/native';
+import FadeInView from '../components/FadeInView';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { supabase } from '../lib/supabase';
@@ -94,7 +96,8 @@ export default function LoginScreen() {
             Log in to your Account
           </Text>
 
-          <View
+          <FadeInView
+            delay={150}
             style={{
               width: '85%',
               backgroundColor: 'white',
@@ -146,7 +149,7 @@ export default function LoginScreen() {
             ) : null}
 
             {/* Login Button */}
-            <Pressable
+            <AnimatedButton
               onPress={handleLogin}
               disabled={loading}
               style={{
@@ -163,7 +166,7 @@ export default function LoginScreen() {
               <Text style={{ color: '#F5F5F5', fontSize: 16, fontWeight: '600' }}>
                 {loading ? 'Loading…' : 'Login'}
               </Text>
-            </Pressable>
+            </AnimatedButton>
 
             {/* Link to Sign Up */}
             <View style={{ position: 'absolute', bottom: 15, right: 20 }}>
@@ -184,7 +187,7 @@ export default function LoginScreen() {
               </Pressable>
             </View>
           
-          </View>
+          </FadeInView>
         </ScrollView>
       </KeyboardAvoidingView>
 

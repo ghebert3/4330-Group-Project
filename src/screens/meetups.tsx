@@ -345,7 +345,6 @@ function isValidDateYMD(dateStr: string): boolean {
 }
 
 export default function MeetupsScreen() {
-  // 👇 get params from MeetupsLoading → navigation.navigate('MeetupsMain', { preloadedMeetups, currentUserId })
   const route = useRoute<any>();
   const routeParams = (route.params ?? {}) as {
     preloadedMeetups?: Meetup[];
@@ -622,7 +621,7 @@ export default function MeetupsScreen() {
   };
 
   return (
-    <FadeInView>
+    <FadeInView style={{ flex: 1 }}>
       <SafeAreaView style={styles.root}>
         <TopDecor />
 
@@ -633,12 +632,14 @@ export default function MeetupsScreen() {
           ItemSeparatorComponent={() => ItemSep}
           ListHeaderComponent={<CreateCloudButton onPress={handleCreatePress} />}
           renderItem={({ item, index }) => (
-            <CloudItem
-              meetup={item}
-              alignRight={index % 2 === 1}
-              idx={index}
-              onPress={() => openDetails(item)}
-            />
+            <FadeInView delay={150 + index * 80}>
+              <CloudItem
+                meetup={item}
+                alignRight={index % 2 === 1}
+                idx={index}
+                onPress={() => openDetails(item)}
+              />
+            </FadeInView>
           )}
           showsVerticalScrollIndicator={false}
         />
@@ -653,10 +654,10 @@ export default function MeetupsScreen() {
         <Modal
           visible={createOpen}
           transparent
-          animationType="fade"
+          animationType="slide"
           onRequestClose={() => setCreateOpen(false)}
         >
-          <View style={styles.modalOverlay}>
+          <View style={styles.modalBackdrop}>
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>Create Meetup</Text>
 
@@ -725,7 +726,7 @@ export default function MeetupsScreen() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.modalCreate]}
+                  style={[styles.modalButton, styles.modalConfirm]}
                   onPress={handleSubmitCreate}
                 >
                   <Text style={styles.modalButtonText}>Create</Text>
@@ -737,63 +738,41 @@ export default function MeetupsScreen() {
 
         {/* Meetup Details Modal */}
         <Modal
-          visible={detailsOpen}
+          visible={!!selectedMeetup}
           transparent
           animationType="fade"
-          onRequestClose={() => setDetailsOpen(false)}
+          onRequestClose={() => setSelectedMeetup(null)}
         >
-          <View style={styles.modalOverlay}>
+          <View style={styles.modalBackdrop}>
             <View style={styles.modalCard}>
               {selectedMeetup && (
                 <>
                   <Text style={styles.modalTitle}>{selectedMeetup.title}</Text>
-
-                  <Text style={styles.modalLabel}>Location</Text>
-                  <Text style={styles.detailText}>{selectedMeetup.location}</Text>
-
-                  <Text style={styles.modalLabel}>Description</Text>
-                  <Text style={styles.detailText}>{selectedMeetup.description}</Text>
-
-                  <Text style={styles.modalLabel}>When</Text>
-                  <Text style={styles.detailText}>
-                    {new Date(selectedMeetup.startsAt).toLocaleString()}
+                  <Text style={styles.modalLabel}>
+                    Location: {selectedMeetup.location}
+                  </Text>
+                  <Text style={styles.modalLabel}>
+                    Spots: {selectedMeetup.currentCount}/{selectedMeetup.capacity}
+                  </Text>
+                  <Text style={styles.modalLabel}>
+                    Starts at: {new Date(selectedMeetup.startsAt).toLocaleString()}
                   </Text>
 
-                  <Text style={styles.modalLabel}>Spots</Text>
-                  <Text style={styles.detailText}>
-                    {selectedMeetup.currentCount}/{selectedMeetup.capacity} people
-                    {selectedMeetup.joined ? ' (You joined)' : ''}
+                  <Text style={styles.modalDescription}>
+                    {selectedMeetup.description}
                   </Text>
-
-                  {currentUserId === selectedMeetup.host && (
-                    <>
-                      <Text style={styles.modalLabel}>Participants (emails)</Text>
-                      {loadingParticipants && (
-                        <Text style={styles.detailText}>Loading…</Text>
-                      )}
-                      {!loadingParticipants && participants.length === 0 && (
-                        <Text style={styles.detailText}>Nobody has joined yet.</Text>
-                      )}
-                      {!loadingParticipants &&
-                        participants.map(p => (
-                          <Text key={p.id} style={styles.detailText}>
-                            • {p.email}
-                          </Text>
-                        ))}
-                    </>
-                  )}
 
                   <View style={styles.modalButtonsRow}>
                     <TouchableOpacity
                       style={[styles.modalButton, styles.modalCancel]}
-                      onPress={() => setDetailsOpen(false)}
+                      onPress={() => setSelectedMeetup(null)}
                     >
                       <Text style={styles.modalButtonText}>Close</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={[styles.modalButton, styles.modalCreate]}
-                      onPress={handleJoinFromDetails}
+                      style={[styles.modalButton, styles.modalConfirm]}
+                      onPress={() => selectedMeetup && handleJoin(selectedMeetup.id)}
                     >
                       <Text style={styles.modalButtonText}>
                         {selectedMeetup.joined ? 'Leave' : 'Join'}
@@ -825,7 +804,7 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
 
-  modalOverlay: {
+  modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
@@ -864,12 +843,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     fontSize: 14,
   },
-  detailText: {
+  modalDescription: {
+    marginTop: 8,
     fontSize: 14,
-    color: '#333',
-    marginBottom: 6,
+    color: '#4a3b3b',
+    lineHeight: 20,
   },
-
   modalButtonsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -884,7 +863,7 @@ const styles = StyleSheet.create({
   modalCancel: {
     backgroundColor: '#E0D0C0',
   },
-  modalCreate: {
+  modalConfirm: {
     backgroundColor: COLORS.purple,
   },
   modalButtonText: {

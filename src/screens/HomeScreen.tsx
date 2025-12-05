@@ -55,7 +55,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <FadeInView>
+    <FadeInView style={{ flex: 1 }}>
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -126,7 +126,7 @@ export default function HomeScreen() {
           </View>
          </Modal>
        </SafeAreaView>
-         </FadeInView>
+      </FadeInView>
   );
 }
 
