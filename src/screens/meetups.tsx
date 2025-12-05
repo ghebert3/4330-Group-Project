@@ -387,6 +387,8 @@ export default function MeetupsScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const isIOS = Platform.OS === 'ios';
+
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(
     routeParams.currentUserId ?? null
@@ -860,15 +862,13 @@ export default function MeetupsScreen() {
 
               {showDatePicker && (
                 <DateTimePicker
-                  value={
-                    newDate ? new Date(newDate + 'T12:00:00') : new Date()
-                  }
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
-                  minimumDate={new Date()}
-                  onChange={handleDateChange}
-                />
-              )}
+                  value={newDate ? new Date(newDate + 'T12:00:00') : new Date()}
+                   mode="date"
+                   display={isIOS ? 'inline' : 'calendar'}
+                   minimumDate={new Date()}
+                     onChange={handleDateChange}
+                       />
+)}
 
               <Text style={styles.modalLabel}>Time</Text>
               <TouchableOpacity
@@ -883,14 +883,16 @@ export default function MeetupsScreen() {
                 </Text>
               </TouchableOpacity>
 
-              {showTimePicker && (
-                <DateTimePicker
-                  value={new Date()}
-                  mode="time"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'clock'}
-                  onChange={handleTimeChange}
-                />
+             {showTimePicker && (
+            <DateTimePicker
+                 value={new Date()}
+                 mode="time"
+                 display={isIOS ? 'spinner' : 'clock'}
+                 onChange={handleTimeChange}
+               />
               )}
+
+
 
               <Text style={styles.modalLabel}>End time </Text>
               <TouchableOpacity
@@ -909,7 +911,7 @@ export default function MeetupsScreen() {
                 <DateTimePicker
                   value={new Date()}
                   mode="time"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'clock'}
+                  display={isIOS ? 'spinner' : 'clock'}
                   onChange={handleEndTimeChange}
                 />
               )}
