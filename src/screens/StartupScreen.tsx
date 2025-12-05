@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Image, StatusBar } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, StyleSheet, Animated, Image, StatusBar, Text } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
@@ -10,6 +10,25 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Startup'>;
 export default function StartupScreen({ navigation }: Props) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const bob = useRef(new Animated.Value(0)).current;
+
+  const [safetyTip, setSafetyTip] = useState("");
+
+  useEffect(() => {
+    const tips = [
+      "Stay aware of your surroundings.",
+      "Meet in public spaces for first meetups.",
+      "Avoid sharing personal information too fast.",
+      "Use your intuition—if something feels off, trust it.",
+      "Let a friend know when you're meeting someone new.",
+      "Keep your valuables secured in public spaces.",
+      "If vibes feel weird, abort mission immediately.",
+      "Report suspicious users immediately.",
+      "Stay safe. Don’t follow strangers… unless they have snacks.",
+      "Stay safe on campus — Mike the Tiger is watching.",
+    ];
+
+    setSafetyTip(tips[Math.floor(Math.random() * tips.length)]);
+  }, []);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -37,13 +56,11 @@ export default function StartupScreen({ navigation }: Props) {
       try {
         const { data } = await supabase.auth.getSession();
         const session = data.session;
-
         // Not logged in → Login
         if (!session) {
           navigation.replace('Login');
           return;
         }
-
         // Logged in → check if this user has completed onboarding
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -52,8 +69,6 @@ export default function StartupScreen({ navigation }: Props) {
           .single();
 
         if (profileError) {
-          console.log('Error checking onboarding status:', profileError);
-          // If something goes wrong, just fall back to Home
           navigation.replace('AppTabs');
           return;
         }
@@ -97,6 +112,10 @@ export default function StartupScreen({ navigation }: Props) {
 
         <Animated.Text style={styles.logoText}>rl</Animated.Text>
       </Animated.View>
+
+      <Animated.Text style={[styles.safetyTip, { opacity: fadeAnim }]}>
+        💡 {safetyTip}
+      </Animated.Text>
     </View>
   );
 }
@@ -116,8 +135,17 @@ const styles = StyleSheet.create({
   },
 
   tornado: {
-    width: 75,  
+    width: 75,
     height: 95,
     marginHorizontal: 6,
+  },
+
+  safetyTip: {
+    color: "white",
+    fontSize: 16,
+    marginTop: 20,
+    paddingHorizontal: 20,
+    textAlign: "center",
+    fontStyle: "italic",
   },
 });
