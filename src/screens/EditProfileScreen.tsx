@@ -36,6 +36,8 @@ const INTEREST_OPTIONS = [
   "Movies",
 ];
 
+const BG = "#F7EEDB";
+
 export default function EditProfileScreen() {
   const navigation = useNavigation<any>();
 
@@ -471,7 +473,7 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: BG,
   },
   header: {
     flexDirection: "row",
@@ -489,6 +491,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 40,
     paddingTop: 10,
+    backgroundColor: "transparent",
   },
   sectionCaption: {
     fontSize: 13,
@@ -533,6 +536,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingVertical: 16,
+    backgroundColor: "transparent",
   },
   fieldTitle: {
     fontSize: 20,

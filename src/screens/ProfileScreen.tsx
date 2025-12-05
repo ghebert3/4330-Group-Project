@@ -43,6 +43,7 @@ const INTEREST_OPTIONS = [
   "Movies",
 ];
 
+const BG = '#F7EEDB';
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
@@ -1524,13 +1525,16 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 150,
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: BG,
   },
 
   loadingContainer: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: BG,
   },
+
   loadingBgWrapper: {
     position: "absolute",
     left: -83,
