@@ -843,7 +843,6 @@ export default function MeetupsScreen() {
             </>
           )}
 
-          {/* 🔽 ADD THIS: report link for any existing meetup */}
           <TouchableOpacity
             style={styles.reportLink}
             onPress={() => openReportModalForMeetup(selectedMeetup)}
@@ -964,7 +963,6 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
 
-  // Backdrop/overlay used by all modals
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -1001,6 +999,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
     color: '#444',
+    
   },
   modalInput: {
     borderWidth: 1,
@@ -1010,12 +1009,14 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: 'white',
     fontSize: 14,
+    
   },
   modalDescription: {
     marginTop: 8,
     fontSize: 14,
     color: '#4a3b3b',
     lineHeight: 20,
+    
   },
   detailText: {
     fontSize: 14,
@@ -1040,7 +1041,6 @@ const styles = StyleSheet.create({
   modalConfirm: {
     backgroundColor: COLORS.purple,
   },
-  // used by Join/Leave button in details
   modalCreate: {
     backgroundColor: COLORS.purple,
   },
