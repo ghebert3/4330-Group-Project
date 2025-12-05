@@ -20,6 +20,7 @@ import FadeInView from '../components/FadeInView';
 import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
+import { useTheme } from '../theme';
 
 const { width } = Dimensions.get('window');
 

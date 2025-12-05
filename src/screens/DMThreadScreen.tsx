@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
+import { useTheme } from '../theme';
 
 type MessageRow = {
   id: number;

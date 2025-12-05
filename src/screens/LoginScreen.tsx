@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 import { supabase } from '../lib/supabase';
+import { useTheme } from '../theme';
 
 import tiger from '../../assets/logos/tiger.png';
 import whirlLogo from '../../assets/logos/tornado-whirl-logo-transparent.png'; // <-- YOUR TRANSPARENT LOGO
@@ -30,6 +31,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
+  const { theme } = useTheme();
 
   const H = Dimensions.get('window').height;
 
@@ -57,7 +59,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#461D7C' }}>
+    <View style={{ flex: 1, backgroundColor: theme.background}}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -87,7 +89,7 @@ export default function LoginScreen() {
 
           <Text
             style={{
-              color: 'white',
+              color: theme.headerText,
               fontSize: 23,
               fontFamily: 'Inter',
               fontWeight: '400',
@@ -102,15 +104,21 @@ export default function LoginScreen() {
             delay={150}
             style={{
               width: '85%',
-              backgroundColor: 'white',
+              backgroundColor: theme.card,
               borderRadius: 8,
               borderWidth: 1,
-              borderColor: '#D9D9D9',
+              borderColor: theme.border,
               padding: 24,
               gap: 12,
             }}
           >
-            <Text style={{ fontSize: 16, fontWeight: '400' }}>Email</Text>
+            <Text style={{ 
+              fontSize: 16, 
+              fontWeight: '400',
+              color: theme.textPrimary, 
+              
+              }}>
+                Email</Text>
             <TextInput
               placeholder="Email"
               autoCapitalize="none"
@@ -119,15 +127,21 @@ export default function LoginScreen() {
               onChangeText={setEmail}
               style={{
                 borderWidth: 1,
-                borderColor: '#D9D9D9',
+                borderColor: theme.border,
                 borderRadius: 8,
                 padding: 12,
                 marginBottom: 8,
+                color: theme.textPrimary,
               }}
-              placeholderTextColor="#B3B3B3"
+              placeholderTextColor={theme.textSecondary}
             />
 
-            <Text style={{ fontSize: 16, fontWeight: '400' }}>Password</Text>
+            <Text style={{ 
+              fontSize: 16, 
+              fontWeight: '400',
+              color: theme.textPrimary, 
+              }}>
+                Password</Text>
             <View
               style={{
                 position: 'relative',
@@ -141,12 +155,13 @@ export default function LoginScreen() {
                 onChangeText={setPassword}
                 style={{
                   borderWidth: 1,
-                  borderColor: '#D9D9D9',
+                  borderColor: theme.border,
                   borderRadius: 8,
                   padding: 12,
-                  paddingRight: 40, // space for the eye icon
+                  paddingRight: 40,
+                  color: theme.textPrimary,
                 }}
-                placeholderTextColor="#B3B3B3"
+                placeholderTextColor={theme.textSecondary}
               />
 
               <Pressable
@@ -162,7 +177,7 @@ export default function LoginScreen() {
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color="#666"
+                  color={theme.textSecondary}
                 />
               </Pressable>
             </View>
@@ -170,7 +185,11 @@ export default function LoginScreen() {
 
             {/* Error */}
             {error ? (
-              <Text style={{ color: 'red', textAlign: 'center', marginBottom: 6 }}>
+              <Text style={{ 
+                color: theme.accent, 
+                textAlign: 'center', 
+                marginBottom: 6 
+                }}>
                 {error}
               </Text>
             ) : null}
@@ -180,17 +199,17 @@ export default function LoginScreen() {
               onPress={handleLogin}
               disabled={loading}
               style={{
-                backgroundColor: '#5903C3',
+                backgroundColor: theme.accent,
                 borderRadius: 8,
                 padding: 14,
                 alignItems: 'center',
                 borderWidth: 1,
-                borderColor: '#2C2C2C',
+                borderColor: theme.border,
                 opacity: loading ? 0.7 : 1,
                 marginBottom: 20,
               }}
             >
-              <Text style={{ color: '#F5F5F5', fontSize: 16, fontWeight: '600' }}>
+              <Text style={{ color: theme.accentText, fontSize: 16, fontWeight: '600' }}>
                 {loading ? 'Loading…' : 'Login'}
               </Text>
             </AnimatedButton>
@@ -199,7 +218,7 @@ export default function LoginScreen() {
             <View style={{ position: 'absolute', bottom: 15, right: 20 }}>
               <Pressable onPress={() => navigation.navigate('SignUp')}>
                 <Text
-                  style={{ color: '#551A8B', fontSize: 13 }}>
+                  style={{ color: theme.accent, fontSize: 13 }}>
                   Create new account
                 </Text>
               </Pressable>
@@ -208,7 +227,7 @@ export default function LoginScreen() {
             <View style={{ position: 'absolute', bottom: 15, left: 20 }}>
               <Pressable onPress={() => navigation.navigate('Restart')}>
                 <Text
-                  style={{ color: '#551A8B', fontSize: 13, }}>
+                  style={{ color: theme.accent, fontSize: 13, }}>
                   Forgot Password?
                 </Text>
               </Pressable>

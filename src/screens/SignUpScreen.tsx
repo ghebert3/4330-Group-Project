@@ -18,6 +18,7 @@ import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import tiger from '../../assets/logos/tiger.png';
 import whirlLogo from '../../assets/logos/tornado-whirl-logo-transparent.png';
+import { useTheme } from '../theme';
 
 type SignUpNav = NativeStackNavigationProp<RootStackParamList, 'SignUp'>;
 
@@ -30,6 +31,7 @@ export default function SignUpScreen() {
   const [error, setError] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const { theme } = useTheme();
 
   const H = Dimensions.get('window').height;
 
@@ -66,7 +68,7 @@ export default function SignUpScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#461D7C' }}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -110,17 +112,17 @@ export default function SignUpScreen() {
           <View
             style={{
               width: '85%',
-              backgroundColor: 'white',
+              backgroundColor: theme.card,
               borderRadius: 8,
               borderWidth: 1,
-              borderColor: '#D9D9D9',
+              borderColor: theme.border,
               padding: 24,
               gap: 12,
               marginBottom: 24,
             }}
           >
             {/* Email */}
-            <Text style={{ fontSize: 16, fontWeight: '400' }}>Email</Text>
+            <Text style={{ fontSize: 16, fontWeight: '400', color: theme.textPrimary, }}>Email</Text>
             <TextInput
               placeholder="Email"
               autoCapitalize="none"
@@ -129,16 +131,18 @@ export default function SignUpScreen() {
               onChangeText={setEmail}
               style={{
                 borderWidth: 1,
-                borderColor: '#D9D9D9',
+                borderColor: theme.border,
                 borderRadius: 8,
                 padding: 12,
                 marginBottom: 8,
+                color: theme.textPrimary,
+                backgroundColor: theme.background,
               }}
-              placeholderTextColor="#B3B3B3"
+              placeholderTextColor={theme.textSecondary}
             />
 
             {/* Password */}
-            <Text style={{ fontSize: 16, fontWeight: '400' }}>Password</Text>
+            <Text style={{ fontSize: 16, fontWeight: '400', color: theme.textPrimary, }}>Password</Text>
             <View
               style={{
                 position: 'relative',
@@ -152,12 +156,14 @@ export default function SignUpScreen() {
                 onChangeText={setPassword}
                 style={{
                   borderWidth: 1,
-                  borderColor: '#D9D9D9',
+                  borderColor: theme.border,
                   borderRadius: 8,
                   padding: 12,
                   paddingRight: 40,
+                  color: theme.textPrimary,
+                  backgroundColor: theme.background,
                 }}
-                placeholderTextColor="#B3B3B3"
+                placeholderTextColor={theme.textSecondary}
               />
               <Pressable
                 onPress={() => setShowPassword((prev) => !prev)}
@@ -172,14 +178,14 @@ export default function SignUpScreen() {
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color="#666"
+                  color={theme.textSecondary}
                 />
               </Pressable>
             </View>
 
 
             {/* Confirm Password */}
-            <Text style={{ fontSize: 16, fontWeight: '400' }}>Confirm Password</Text>
+            <Text style={{ fontSize: 16, fontWeight: '400', color: theme.textPrimary, }}>Confirm Password</Text>
             <View
               style={{
                 position: 'relative',
@@ -193,12 +199,12 @@ export default function SignUpScreen() {
                 onChangeText={setConfirm}
                 style={{
                   borderWidth: 1,
-                  borderColor: '#D9D9D9',
+                  borderColor: theme.border,
                   borderRadius: 8,
                   padding: 12,
                   paddingRight: 40,
                 }}
-                placeholderTextColor="#B3B3B3"
+                placeholderTextColor={theme.textSecondary}
               />
               <Pressable
                 onPress={() => setShowConfirm((prev) => !prev)}
@@ -213,7 +219,7 @@ export default function SignUpScreen() {
                 <Ionicons
                   name={showConfirm ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
-                  color="#666"
+                  color={theme.textSecondary}
                 />
               </Pressable>
             </View>
@@ -221,7 +227,7 @@ export default function SignUpScreen() {
             {error ? (
               <Text
                 style={{
-                  color: 'red',
+                  color: theme.danger,
                   textAlign: 'center',
                   marginBottom: 6,
                 }}
@@ -235,28 +241,28 @@ export default function SignUpScreen() {
               onPress={handleSignUp}
               disabled={loading}
               style={{
-                backgroundColor: '#5903C3',
+                backgroundColor: theme.accent,
                 borderRadius: 8,
                 padding: 14,
                 alignItems: 'center',
                 borderWidth: 1,
-                borderColor: '#2C2C2C',
+                borderColor: theme.textPrimary,
                 opacity: loading ? 0.7 : 1,
                 marginBottom: 20,
               }}
             >
-              <Text style={{ color: '#F5F5F5', fontSize: 16, fontWeight: '600' }}>
+              <Text style={{ color: theme.accentText, fontSize: 16, fontWeight: '600' }}>
                 {loading ? 'Creating Account…' : 'Sign Up'}
               </Text>
             </Pressable>
 
             {/* Link to Login */}
             <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-              <Text style={{ color: 'black', fontSize: 15 }}>Have an account?</Text>
+              <Text style={{ color: theme.textPrimary, fontSize: 15 }}>Have an account?</Text>
               <Pressable onPress={() => navigation.navigate('Login')}>
                 <Text
                   style={{
-                    color: '#551A8B',
+                    color: theme.accent,
                     fontSize: 15,
                     marginLeft: 4,
                   }}

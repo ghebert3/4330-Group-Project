@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
+import { useTheme } from '../theme';
 
 type ConversationRow = {
   id: number;
@@ -29,6 +30,7 @@ export default function DMListScreen() {
   const [conversations, setConversations] = useState<ConversationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { theme } = useTheme();
 
   const loadConversations = useCallback(async () => {
     try {

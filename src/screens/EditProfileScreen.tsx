@@ -14,6 +14,8 @@ import { Ionicons } from "@expo/vector-icons";
 import FadeInView from "../components/FadeInView";
 import AnimatedTag from "../components/AnimatedTag";
 import { supabase } from "../lib/supabase";
+import { useTheme } from '../theme';
+import type { Theme } from '../theme';
 
 type ActiveField = "name" | "hometown" | "bio" | "interests" | null;
 
@@ -36,8 +38,6 @@ const INTEREST_OPTIONS = [
   "Movies",
 ];
 
-const BG = "#F7EEDB";
-
 export default function EditProfileScreen() {
   const navigation = useNavigation<any>();
 
@@ -55,6 +55,8 @@ export default function EditProfileScreen() {
   const [hometownSearch, setHometownSearch] = useState("");
   // custom interest input
   const [customTag, setCustomTag] = useState("");
+  const { theme } = useTheme();
+  const styles = makeStyles(theme);
 
   useEffect(() => {
     async function loadProfile() {
@@ -194,7 +196,7 @@ export default function EditProfileScreen() {
               {name.trim() || "Add your name"}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#999" />
+          <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
         </Pressable>
 
         {/* Hometown row */}
@@ -208,7 +210,7 @@ export default function EditProfileScreen() {
               {hometown.trim() || "Add a hometown"}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#999" />
+          <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
         </Pressable>
 
         {/* Bio row */}
@@ -226,7 +228,7 @@ export default function EditProfileScreen() {
                 : "Add a short bio (max 400 characters)"}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#999" />
+          <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
         </Pressable>
 
         {/* Interests row */}
@@ -242,7 +244,7 @@ export default function EditProfileScreen() {
                 : "Tap to pick interests & hobbies"}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#999" />
+          <Ionicons name="chevron-forward" size={18} color={theme.textSecondary} />
         </Pressable>
 
         {/* Save Button */}
@@ -277,7 +279,7 @@ export default function EditProfileScreen() {
           value={name}
           onChangeText={setName}
           placeholder="Your name"
-          placeholderTextColor="#999"
+          placeholderTextColor={theme.textSecondary}
           style={styles.input}
         />
 
@@ -300,12 +302,12 @@ export default function EditProfileScreen() {
         </Text>
 
         <View style={styles.searchInputWrap}>
-          <Ionicons name="search" size={18} color="#777" />
+          <Ionicons name="search" size={18} color={theme.textSecondary} />
           <TextInput
             value={hometownSearch}
             onChangeText={setHometownSearch}
             placeholder="Baton Rouge, LA"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textSecondary}
             style={styles.searchInput}
           />
         </View>
@@ -335,7 +337,7 @@ export default function EditProfileScreen() {
           value={bio}
           onChangeText={setBio}
           placeholder="ex. LSU CS, loves late-night study sessions and UREC hoops."
-          placeholderTextColor="#999"
+          placeholderTextColor={theme.textSecondary}
           style={[styles.input, { height: 140, textAlignVertical: "top" }]}
           multiline
           maxLength={400}
@@ -398,7 +400,7 @@ export default function EditProfileScreen() {
             value={customTag}
             onChangeText={setCustomTag}
             placeholder="ex. Anime, Chess, Intramural soccer"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textSecondary}
             style={[styles.input, { flex: 1, marginRight: 8, marginBottom: 0 }]}
           />
           <Pressable style={styles.addTagButton} onPress={addCustomTag}>
@@ -431,7 +433,7 @@ export default function EditProfileScreen() {
     if (loading) {
       return (
         <View style={styles.loadingWrap}>
-          <Text style={{ color: "#777" }}>Loading profile…</Text>
+          <Text style={{ color: theme.textSecondary }}>Loading profile…</Text>
         </View>
       );
     }
@@ -456,7 +458,7 @@ export default function EditProfileScreen() {
         {/* Header with back arrow that respects activeField */}
         <View style={styles.header}>
           <Pressable onPress={handleHeaderBack} style={{ padding: 4 }}>
-            <Ionicons name="arrow-back" size={24} color="#111" />
+            <Ionicons name="arrow-back" size={24} color={theme.textPrimary} />
           </Pressable>
           <Text style={styles.headerTitle}>
             {activeField ? "Edit profile" : "Edit profile"}
@@ -470,179 +472,184 @@ export default function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: BG,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 8,
-    justifyContent: "space-between",
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-    paddingTop: 10,
-    backgroundColor: "transparent",
-  },
-  sectionCaption: {
-    fontSize: 13,
-    color: "#777",
-    marginBottom: 8,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#eee",
-  },
-  rowTextWrap: {
-    flex: 1,
-    marginRight: 12,
-  },
-  rowLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 4,
-  },
-  rowValue: {
-    fontSize: 14,
-    color: "#555",
-  },
-  saveButton: {
-    backgroundColor: "#461D7C",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  saveButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+const makeStyles = (theme: Theme) =>
+  StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 20,
+      paddingTop: 10,
+      paddingBottom: 8,
+      justifyContent: "space-between",
+    },
+    headerTitle: {
+      fontSize: 20,
+      fontWeight: "700",
+      color: theme.headerText,
+    },
+    content: {
+      paddingHorizontal: 20,
+      paddingBottom: 40,
+      paddingTop: 10,
+      backgroundColor: "transparent",
+    },
+    sectionCaption: {
+      fontSize: 13,
+      color: theme.textSecondary,
+      marginBottom: 8,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      paddingVertical: 14,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+    },
+    rowTextWrap: {
+      flex: 1,
+      marginRight: 12,
+    },
+    rowLabel: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: theme.textPrimary,
+      marginBottom: 4,
+    },
+    rowValue: {
+      fontSize: 14,
+      color: theme.textSecondary,
+    },
+    saveButton: {
+      backgroundColor: theme.accent,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: "center",
+    },
+    saveButtonText: {
+      color: theme.accentText,
+      fontSize: 16,
+      fontWeight: "600",
+    },
 
-  // Field views
-  fieldContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: "transparent",
-  },
-  fieldTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  fieldSubtitle: {
-    fontSize: 13,
-    color: "#666",
-    marginBottom: 12,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#D9D9D9",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    backgroundColor: "#fafafa",
-    marginBottom: 12,
-  },
-  fieldDoneButton: {
-    marginTop: 8,
-    backgroundColor: "#461D7C",
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  fieldDoneText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  charCount: {
-    alignSelf: "flex-end",
-    fontSize: 12,
-    color: "#777",
-  },
+    // Field views
+    fieldContainer: {
+      flex: 1,
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      backgroundColor: "transparent",
+    },
+    fieldTitle: {
+      fontSize: 20,
+      fontWeight: "700",
+      marginBottom: 4,
+      color: theme.textPrimary,
+    },
+    fieldSubtitle: {
+      fontSize: 13,
+      color: theme.textSecondary,
+      marginBottom: 12,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 15,
+      backgroundColor: theme.card,
+      marginBottom: 12,
+      color: theme.textPrimary,
+    },
+    fieldDoneButton: {
+      marginTop: 8,
+      backgroundColor: theme.accent,
+      borderRadius: 10,
+      paddingVertical: 12,
+      alignItems: "center",
+    },
+    fieldDoneText: {
+      color: theme.accentText,
+      fontSize: 15,
+      fontWeight: "600",
+    },
+    charCount: {
+      alignSelf: "flex-end",
+      fontSize: 12,
+      color: theme.textSecondary,
+    },
 
-  searchInputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 10,
-    backgroundColor: "#eee",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 6,
-    marginLeft: 6,
-  },
+    searchInputWrap: {
+      flexDirection: "row",
+      alignItems: "center",
+      borderRadius: 10,
+      backgroundColor: theme.card,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+    },
+    searchInput: {
+      flex: 1,
+      paddingVertical: 6,
+      marginLeft: 6,
+      color: theme.textPrimary,
+    },
 
-  // Interests chips
-  chipGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 12,
-    gap: 8,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    backgroundColor: "#fff",
-  },
-  chipActive: {
-    borderColor: "#5903C3",
-    backgroundColor: "#EEE5FF",
-  },
-  chipText: {
-    fontSize: 13,
-    color: "#555",
-  },
-  chipTextActive: {
-    color: "#461D7C",
-    fontWeight: "600",
-  },
-  customRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
-  },
-  addTagButton: {
-    backgroundColor: "#461D7C",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  addTagText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  selectedTagsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 10,
-    gap: 6,
-  },
+    // Interests chips
+    chipGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      marginTop: 12,
+      gap: 8,
+    },
+    chip: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.card,
+    },
+    chipActive: {
+      borderColor: theme.accent,
+      backgroundColor: theme.accent,
+    },
+    chipText: {
+      fontSize: 13,
+      color: theme.textSecondary,
+    },
+    chipTextActive: {
+      color: theme.accentText,
+      fontWeight: "600",
+    },
+    customRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 10,
+    },
+    addTagButton: {
+      backgroundColor: theme.accent,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    addTagText: {
+      color: theme.accentText,
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    selectedTagsRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      marginTop: 10,
+      gap: 6,
+    },
 
-  loadingWrap: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+    loadingWrap: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });
