@@ -678,65 +678,51 @@ export default function ProfileScreen() {
         </Pressable>
       )}
 
-      {/* TAGS */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
-        {tags.map((tag, index) => (
-      <AnimatedTag key={`${tag}-${index}`} label={tag} />
-        ))}
-
-        {/* Add Tag Button */}
-        <Pressable
-          style={styles.addTagButton}
-          onPress={() => setTagModal(true)}
-        >
-          <Text style={{ color: "#555", fontFamily: "CherryBomb" }}>+ Tag</Text>
-        </Pressable>
-      </View>
-
-      {/* LOOKING FOR */}
-      <View style={styles.sectionBox}>
-        <Text style={styles.sectionTitle}>Looking for</Text>
-
-        <View style={styles.lookingForContainer}>
-          {lookingForItems.map((item, i) => (
-            <View key={i} style={styles.lookingForItem}>
-              <Text style={styles.lookingForText}>{item}</Text>
-              <Pressable
-                onPress={() => removeLookingFor(i)}
-                style={styles.removeBtn}
-              >
-                <Text style={styles.removeBtnText}>×</Text>
-              </Pressable>
-            </View>
-          ))}
-          <Pressable
-            style={styles.addLookingForBtn}
-            onPress={() => setLookingForModal(true)}
-          >
-            <Text style={{ color: "#555", fontFamily: "CherryBomb" }}>
-              + Add
-            </Text>
-          </Pressable>
+        {/* STATS – now appears first */}
+        <View style={[styles.sectionBox, { marginTop: 18 }]}>
+          <View style={styles.statsRow}>
+            <Stat number="0" label="Whirls" />
+            <Pressable onPress={() => setConnectionsModal(true)}>
+              <View style={styles.statBlock}>
+                <Text style={styles.statNumber}>{connections.length}</Text>
+                <Text
+                  style={[styles.statLabel, { color: "#5903C3" }]}
+                >
+                  Campus Connections
+                </Text>
+              </View>
+            </Pressable>
+            <Stat number="0" label="People met" />
+          </View>
         </View>
-      </View>
 
-      {/* STATS */}
-      <View style={styles.sectionBox}>
-        <View style={styles.statsRow}>
-          <Stat number="0" label="Whirls" />
-          <Pressable onPress={() => setConnectionsModal(true)}>
-            <View style={styles.statBlock}>
-              <Text style={styles.statNumber}>{connections.length}</Text>
-              <Text
-                style={[styles.statLabel, { color: "#5903C3" }]}
-              >
-                Campus Connections
+        {/* LOOKING FOR – now comes after stats */}
+        <View style={styles.sectionBox}>
+          <Text style={styles.sectionTitle}>Looking for</Text>
+
+          <View style={styles.lookingForContainer}>
+            {lookingForItems.map((item, i) => (
+              <View key={i} style={styles.lookingForItem}>
+                <Text style={styles.lookingForText}>{item}</Text>
+                <Pressable
+                  onPress={() => removeLookingFor(i)}
+                  style={styles.removeBtn}
+                >
+                  <Text style={styles.removeBtnText}>×</Text>
+                </Pressable>
+              </View>
+            ))}
+
+            <Pressable
+              style={styles.addLookingForBtn}
+              onPress={() => setLookingForModal(true)}
+            >
+              <Text style={{ color: "#555", fontFamily: "CherryBomb" }}>
+                + Add
               </Text>
-            </View>
-          </Pressable>
-          <Stat number="0" label="People met" />
+            </Pressable>
+          </View>
         </View>
-      </View>
 
       {/* PHOTO ROW (click to enlarge) */}
       <View style={styles.photoRow}>
@@ -1146,6 +1132,39 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
               </Pressable>
+
+                            {/* Tags / Interests row */}
+              <Pressable
+                style={styles.settingsRow}
+                onPress={() => setTagModal(true)}
+              >
+                <View>
+                  <Text style={styles.settingsRowLabel}>Interests & tags</Text>
+
+                  {tags.length > 0 ? (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
+                      {tags.slice(0, 3).map((tag, idx) => (
+                        <Text
+                          key={`${tag}-${idx}`}
+                          style={[styles.settingsRowValue, { marginRight: 8 }]}
+                        >
+                          #{tag}
+                        </Text>
+                      ))}
+                      {tags.length > 3 && (
+                        <Text style={styles.settingsRowValue}>
+                          +{tags.length - 3} more
+                        </Text>
+                      )}
+                    </View>
+                  ) : (
+                    <Text style={styles.settingsRowValue}>
+                      Add a few interests so people can find you.
+                    </Text>
+                  )}
+                </View>
+              </Pressable>
+
 
               {/* View Email (non-pressable) */}
               <View style={styles.settingsRow}>
