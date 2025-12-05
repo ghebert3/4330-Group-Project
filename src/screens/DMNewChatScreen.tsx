@@ -3,9 +3,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   TouchableOpacity,
+  StyleSheet,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,7 +14,7 @@ import { supabase } from '../lib/supabase';
 
 type ProfileRow = {
   id: string;
-  email: string;
+  email: string | null;
 };
 
 const BG = '#F7EEDB';
@@ -25,6 +25,7 @@ export default function DMNewChatScreen() {
 
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
 
   const loadProfiles = useCallback(async () => {
     try {
@@ -41,11 +42,11 @@ export default function DMNewChatScreen() {
         return;
       }
 
-     
+      // Load other app users from your profiles table
       const { data, error } = await supabase
         .from('profiles')
         .select('id, email')
-        .neq('id', user.id)        
+        .neq('id', user.id)          // don't show myself
         .order('email', { ascending: true });
 
       if (error) {
@@ -54,7 +55,12 @@ export default function DMNewChatScreen() {
         return;
       }
 
-      setProfiles((data ?? []) as ProfileRow[]);
+      const rows: ProfileRow[] = (data ?? []).map((p: any) => ({
+        id: p.id as string,
+        email: (p.email as string) ?? null,
+      }));
+
+      setProfiles(rows);
     } finally {
       setLoading(false);
     }
@@ -64,86 +70,125 @@ export default function DMNewChatScreen() {
     loadProfiles();
   }, [loadProfiles]);
 
-  const getDisplayName = (p: ProfileRow) => {
-    if (p.email) {
-      const [local] = p.email.split('@');
-      return local || p.email;
+  const handleStartChat = async (otherUserId: string) => {
+    if (creating) return;
+    setCreating(true);
+
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error('Error getting user', userError);
+        return;
+      }
+
+      const myId = user.id;
+
+      // 1) All conversations I'm in
+      const { data: myParts, error: myPartsErr } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', myId);
+
+      if (myPartsErr) {
+        console.error('Error loading my convos', myPartsErr);
+        return;
+      }
+
+      const myConvoIds = (myParts ?? []).map(
+        p => p.conversation_id as number
+      );
+
+      let existingConvoId: number | undefined;
+
+      if (myConvoIds.length > 0) {
+        // 2) Among those, which convos also contain the other user?
+        const { data: overlap, error: overlapErr } = await supabase
+          .from('conversation_participants')
+          .select('conversation_id')
+          .eq('user_id', otherUserId)
+          .in('conversation_id', myConvoIds);
+
+        if (overlapErr) {
+          console.error('Error checking existing convo', overlapErr);
+          return;
+        }
+
+        existingConvoId = overlap?.[0]?.conversation_id as
+          | number
+          | undefined;
+      }
+
+      // 3) If one exists -> reuse it
+      if (existingConvoId) {
+        navigation.navigate('DMThread', { conversationId: existingConvoId });
+        return;
+      }
+
+      // 4) Otherwise create a new conversation
+      const { data: convo, error: convoErr } = await supabase
+        .from('conversations')
+        .insert({})
+        .select()
+        .single();
+
+      if (convoErr || !convo) {
+        console.error('Error creating conversation', convoErr);
+        return;
+      }
+
+      const convoId = convo.id as number;
+
+      // Add me
+      const { error: partErr1 } = await supabase
+        .from('conversation_participants')
+        .insert({
+          conversation_id: convoId,
+          user_id: myId,
+        });
+
+      if (partErr1) {
+        console.error('Error adding self as participant', partErr1);
+        return;
+      }
+
+      // Add the other user
+      const { error: partErr2 } = await supabase
+        .from('conversation_participants')
+        .insert({
+          conversation_id: convoId,
+          user_id: otherUserId,
+        });
+
+      if (partErr2) {
+        console.error('Error adding other user as participant', partErr2);
+        return;
+      }
+
+      navigation.navigate('DMThread', { conversationId: convoId });
+    } finally {
+      setCreating(false);
     }
-    return p.id;
   };
 
- const handleStartChat = async (target: ProfileRow) => {
-  try {
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      console.error('Error getting user', userError);
-      return;
-    }
-
-    const { data: convo, error: convoErr } = await supabase
-      .from('conversations')
-      .insert({})
-      .select()
-      .single();
-
-    if (convoErr || !convo) {
-      console.error('Error creating conversation', convoErr);
-      return;
-    }
-
-    const convoId = convo.id as number;
-
-    const { error: selfErr } = await supabase
-      .from('conversation_participants')
-      .insert({
-        conversation_id: convoId,
-        user_id: user.id,
-      });
-
-    if (selfErr) {
-      console.error('Error adding self as participant', selfErr);
-      return;
-    }
-
-    const { error: otherErr } = await supabase
-      .from('conversation_participants')
-      .insert({
-        conversation_id: convoId,
-        user_id: target.id,
-      });
-
-    if (otherErr) {
-      console.error('Error adding target participant', otherErr);
-      return;
-    }
-
-    navigation.navigate('DMThread', { conversationId: convoId });
-  } catch (e) {
-    console.error('Error starting chat', e);
-  }
-};
-
-
   const renderItem = ({ item }: { item: ProfileRow }) => {
-    const name = getDisplayName(item);
+    const label = item.email ?? '(no email)';
     return (
       <TouchableOpacity
         style={styles.row}
-        onPress={() => handleStartChat(item)}
+        onPress={() => handleStartChat(item.id)}
       >
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
-            {name.charAt(0).toUpperCase()}
+            {label.charAt(0).toUpperCase()}
           </Text>
         </View>
-        <View style={styles.textWrap}>
-          <Text style={styles.name}>{name}</Text>
-          <Text style={styles.email}>{item.email}</Text>
-        </View>
+        <Text style={styles.email} numberOfLines={1}>
+          {label}
+        </Text>
       </TouchableOpacity>
     );
   };
@@ -152,9 +197,6 @@ export default function DMNewChatScreen() {
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>New message</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.headerClose}>Cancel</Text>
-        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -162,17 +204,10 @@ export default function DMNewChatScreen() {
           <ActivityIndicator size="small" color={PURPLE} />
           <Text style={styles.loadingText}>Loading people…</Text>
         </View>
-      ) : profiles.length === 0 ? (
-        <View style={styles.emptyWrap}>
-          <Text style={styles.emptyTitle}>No other users yet</Text>
-          <Text style={styles.emptySubtitle}>
-            When more people sign up, you’ll see them here.
-          </Text>
-        </View>
       ) : (
         <FlatList
           data={profiles}
-          keyExtractor={p => p.id}
+          keyExtractor={item => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
         />
@@ -187,67 +222,42 @@ const styles = StyleSheet.create({
     backgroundColor: BG,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 8,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
     color: '#3f2b64',
-  },
-  headerClose: {
-    fontSize: 14,
-    color: PURPLE,
-    fontWeight: '600',
   },
   loadingWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     marginTop: 16,
   },
   loadingText: {
-    marginLeft: 8,
+    marginLeft: 10,
     color: '#555',
   },
-  emptyWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#444',
-    marginBottom: 4,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-  },
   listContent: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingBottom: 16,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 10,
     paddingVertical: 10,
-    paddingHorizontal: 8,
     marginVertical: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.9)',
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#e0d2ff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -257,17 +267,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#4a2a8a',
   },
-  textWrap: {
-    flex: 1,
-  },
-  name: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-  },
   email: {
-    fontSize: 12,
-    color: '#777',
-    marginTop: 2,
+    flex: 1,
+    fontSize: 15,
+    color: '#333',
   },
 });

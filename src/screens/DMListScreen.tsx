@@ -15,6 +15,7 @@ import { supabase } from '../lib/supabase';
 
 type ConversationRow = {
   id: number;
+  title: string; 
   lastMessageBody: string | null;
   lastMessageAt: string | null;
 };
@@ -44,11 +45,13 @@ export default function DMListScreen() {
         return;
       }
 
+      const currentUserId = user.id;
+
       // 1) Get all conversation_ids where I'm a participant
       const { data: parts, error: partsErr } = await supabase
         .from('conversation_participants')
         .select('conversation_id')
-        .eq('user_id', user.id);
+        .eq('user_id', currentUserId);
 
       if (partsErr) {
         console.error('Error loading conversation participants', partsErr);
@@ -63,7 +66,34 @@ export default function DMListScreen() {
         return;
       }
 
-      // 2) Get all messages in those conversations, newest first
+      // 2) For those conversations, load ALL participants + their emails
+      const { data: allParts, error: allPartsErr } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id, user_id, profiles ( email )')
+        .in('conversation_id', convoIds);
+
+      if (allPartsErr) {
+        console.error('Error loading participant emails', allPartsErr);
+      }
+
+      // Build a title (other user's name/email) for each conversation
+      const titleByConvo = new Map<number, string>();
+
+      (allParts ?? []).forEach((row: any) => {
+        const cid = row.conversation_id as number;
+        const uid = row.user_id as string;
+
+        // We only care about "the other person", not me
+        if (uid === currentUserId) return;
+
+        if (!titleByConvo.has(cid)) {
+          const email: string = row.profiles?.email ?? '';
+          const localPart = email.split('@')[0] || email || 'Conversation';
+          titleByConvo.set(cid, localPart);
+        }
+      });
+
+      // 3) Get all messages in those conversations, newest first
       const { data: msgs, error: msgsErr } = await supabase
         .from('messages')
         .select('id, conversation_id, body, created_at')
@@ -91,27 +121,46 @@ export default function DMListScreen() {
         }
       });
 
-      const rows: ConversationRow[] = convoIds.map(cid => {
-        const latest = latestByConvo.get(cid);
-        return {
-          id: cid,
-          lastMessageBody: latest?.body ?? null,
-          lastMessageAt: latest?.created_at ?? null,
-        };
-      });
+      const rows: ConversationRow[] = [];
 
-      // Sort by last message time (newest first)
-      rows.sort((a, b) => {
-        if (!a.lastMessageAt && !b.lastMessageAt) return 0;
-        if (!a.lastMessageAt) return 1;
-        if (!b.lastMessageAt) return -1;
-        return (
-          new Date(b.lastMessageAt).getTime() -
-          new Date(a.lastMessageAt).getTime()
-        );
-      });
+convoIds.forEach(cid => {
+  const latest = latestByConvo.get(cid);
+  if (!latest) {
+    return;
+  }
 
-      setConversations(rows);
+  const fallbackTitle = `Conversation ${cid}`;
+  rows.push({
+    id: cid,
+    title: titleByConvo.get(cid) ?? fallbackTitle,
+    lastMessageBody: latest.body,
+    lastMessageAt: latest.created_at,
+  });
+});
+
+
+rows.sort((a, b) => {
+  if (!a.lastMessageAt && !b.lastMessageAt) return 0;
+  if (!a.lastMessageAt) return 1;
+  if (!b.lastMessageAt) return -1;
+  return (
+    new Date(b.lastMessageAt).getTime() -
+    new Date(a.lastMessageAt).getTime()
+  );
+});
+
+
+const unique: ConversationRow[] = [];
+const seenTitles = new Set<string>();
+
+for (const row of rows) {
+  if (seenTitles.has(row.title)) continue;
+  seenTitles.add(row.title);
+  unique.push(row);
+}
+
+setConversations(unique);
+
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -144,12 +193,12 @@ export default function DMListScreen() {
       >
         <View style={styles.rowAvatar}>
           <Text style={styles.avatarText}>
-            {String(item.id).slice(-2)} {/* temp avatar */}
+            {item.title.charAt(0).toUpperCase()}
           </Text>
         </View>
 
         <View style={styles.rowTextWrap}>
-          <Text style={styles.rowTitle}>Conversation #{item.id}</Text>
+          <Text style={styles.rowTitle}>{item.title}</Text>
           <Text style={styles.rowPreview} numberOfLines={1}>
             {preview}
           </Text>
@@ -160,7 +209,6 @@ export default function DMListScreen() {
     );
   };
 
-  // 👉 New chat now just navigates to the "pick user" screen
   const handleNewChat = () => {
     navigation.navigate('DMNewChat');
   };
@@ -170,10 +218,7 @@ export default function DMListScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Messages</Text>
 
-        <TouchableOpacity
-          style={styles.newButton}
-          onPress={handleNewChat}
-        >
+        <TouchableOpacity style={styles.newButton} onPress={handleNewChat}>
           <Text style={styles.newButtonText}>+ New chat</Text>
         </TouchableOpacity>
       </View>

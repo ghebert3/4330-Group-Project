@@ -399,6 +399,8 @@ export default function MeetupsScreen() {
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedMeetup, setSelectedMeetup] = useState<Meetup | null>(null);
+  const [hostEmail, setHostEmail] = useState<string | null>(null);
+
 
   //  REPORTING STATE 
   const [reportModalVisible, setReportModalVisible] = useState(false);
@@ -472,53 +474,77 @@ export default function MeetupsScreen() {
   };
 
   const openDetails = async (meetup: Meetup) => {
-    setSelectedMeetup(meetup);
-    setDetailsOpen(true);
-    setParticipants([]);
-    setLoadingParticipants(false);
+  setSelectedMeetup(meetup);
+  setDetailsOpen(true);
+  setParticipants([]);
+  setLoadingParticipants(false);
+  setHostEmail(null);
 
-    if (!currentUserId || currentUserId !== meetup.host) return;
-
+  // 1) Load host info so anyone can see who made it
+  if (meetup.host) {
     try {
-      setLoadingParticipants(true);
-
-      const { data: rows, error: partErr } = await supabase
-        .from('meetup_participants')
-        .select('user_id')
-        .eq('meetup_id', Number(meetup.id));
-
-      if (partErr) {
-        console.error('Error loading participants', partErr);
-        return;
-      }
-
-      if (!rows || rows.length === 0) {
-        setParticipants([]);
-        return;
-      }
-
-      const userIds = rows.map(r => r.user_id);
-
-      const { data: profs, error: profErr } = await supabase
+      const { data: hostProfile, error: hostErr } = await supabase
         .from('profiles')
-        .select('id, email')
-        .in('id', userIds);
+        .select('email')
+        .eq('id', meetup.host)
+        .single();
 
-      if (profErr) {
-        console.error('Error loading participant emails', profErr);
-        return;
+      if (!hostErr && hostProfile) {
+        setHostEmail(hostProfile.email as string);
+      } else {
+        setHostEmail(null);
       }
-
-      const mapped = (profs ?? []).map(p => ({
-        id: p.id as string,
-        email: p.email as string,
-      }));
-
-      setParticipants(mapped);
-    } finally {
-      setLoadingParticipants(false);
+    } catch (e) {
+      console.error('Error loading host profile', e);
+      setHostEmail(null);
     }
-  };
+  } else {
+    setHostEmail('Whirl demo meetup');
+  }
+
+  if (!currentUserId || currentUserId !== meetup.host) return;
+
+  try {
+    setLoadingParticipants(true);
+
+    const { data: rows, error: partErr } = await supabase
+      .from('meetup_participants')
+      .select('user_id')
+      .eq('meetup_id', Number(meetup.id));
+
+    if (partErr) {
+      console.error('Error loading participants', partErr);
+      return;
+    }
+
+    if (!rows || rows.length === 0) {
+      setParticipants([]);
+      return;
+    }
+
+    const userIds = rows.map(r => r.user_id);
+
+    const { data: profs, error: profErr } = await supabase
+      .from('profiles')
+      .select('id, email')
+      .in('id', userIds);
+
+    if (profErr) {
+      console.error('Error loading participant emails', profErr);
+      return;
+    }
+
+    const mapped = (profs ?? []).map(p => ({
+      id: p.id as string,
+      email: p.email as string,
+    }));
+
+    setParticipants(mapped);
+  } finally {
+    setLoadingParticipants(false);
+  }
+};
+
 
   const handleSubmitCreate = async () => {
     const trimmedTitle = newTitle.trim();
@@ -955,11 +981,21 @@ export default function MeetupsScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               {selectedMeetup && (
-                <>
+  <>
                   <Text style={styles.modalTitle}>{selectedMeetup.title}</Text>
+
+                   <Text style={styles.modalLabel}>Hosted by</Text>
+                     <Text style={styles.detailText}>
+                      {hostEmail
+                      ? hostEmail
+                      : selectedMeetup.host
+                      ? 'Loading host…'
+                      : 'Whirl demo meetup'}
+                        </Text>
 
                   <Text style={styles.modalLabel}>Location</Text>
                   <Text style={styles.detailText}>{selectedMeetup.location}</Text>
+
 
                   <Text style={styles.modalLabel}>Description</Text>
                   <Text style={styles.detailText}>{selectedMeetup.description}</Text>
