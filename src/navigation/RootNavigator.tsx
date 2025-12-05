@@ -25,6 +25,8 @@ import RestartScreen from '../screens/RestartScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import ProfileOverviewScreen from "../screens/ProfileOverviewScreen";
+import EditProfileScreen from '../screens/EditProfileScreen';
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -145,6 +147,10 @@ export default function RootNavigator() {
         <Stack.Screen name="Restart" component={RestartScreen} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        <Stack.Screen name="ProfileOverview" component={ProfileOverviewScreen} />
+        <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false }}
+/>
+
 
         <Stack.Screen name="AppTabs" component={AppTabs} />
       </Stack.Navigator>
