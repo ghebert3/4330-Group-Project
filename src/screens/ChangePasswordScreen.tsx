@@ -13,6 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 
 type ChangePasswordNavProp = NativeStackNavigationProp<
@@ -28,6 +29,9 @@ export default function ChangePasswordScreen() {
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
 
   const handleUpdatePassword = async () => {
     setError(null);
@@ -87,24 +91,50 @@ export default function ChangePasswordScreen() {
           </Text>
 
           <Text style={styles.label}>New password</Text>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            placeholder="Enter new password"
-            placeholderTextColor="#999"
-            style={styles.input}
-          />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              placeholder="Enter new password"
+              placeholderTextColor="#999"
+              style={[styles.input, { paddingRight: 40 }]}
+            />
+            <Pressable
+              onPress={() => setShowPassword((prev) => !prev)}
+              style={styles.eyeIcon}
+            >
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color="#666"
+              />
+            </Pressable>
+          </View>
 
-          <Text style={styles.label}>Confirm password</Text>
-          <TextInput
-            value={confirm}
-            onChangeText={setConfirm}
-            secureTextEntry
-            placeholder="Re-enter new password"
-            placeholderTextColor="#999"
-            style={styles.input}
-          />
+
+                    <Text style={styles.label}>Confirm password</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              value={confirm}
+              onChangeText={setConfirm}
+              secureTextEntry={!showConfirm}
+              placeholder="Re-enter new password"
+              placeholderTextColor="#999"
+              style={[styles.input, { paddingRight: 40 }]}
+            />
+            <Pressable
+              onPress={() => setShowConfirm((prev) => !prev)}
+              style={styles.eyeIcon}
+            >
+              <Ionicons
+                name={showConfirm ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color="#666"
+              />
+            </Pressable>
+          </View>
+
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -187,5 +217,16 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+    inputWrapper: {
+    position: 'relative',
+    marginBottom: 12,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    marginTop: -10,
+    padding: 4,
   },
 });
