@@ -9,69 +9,61 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
-import type { RootStackParamList } from '../navigation/types';
-
-type DMThreadRouteProp = RouteProp<RootStackParamList, 'DMThread'>;
 
 type MessageRow = {
   id: number;
-  conversation_id: number;
   sender_id: string;
   body: string;
   created_at: string;
 };
 
-type ProfileRow = {
-  id: string;
-  full_name?: string | null;
-  username?: string | null;
-  email?: string | null;
+type RouteParams = {
+  conversationId: number;
 };
 
 const BG = '#F7EEDB';
 const PURPLE = '#7E57C2';
 
 export default function DMThreadScreen() {
-  const route = useRoute<DMThreadRouteProp>();
-  const { conversationId } = route.params;
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
+  const { conversationId } = route.params as RouteParams;
 
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [input, setInput] = useState('');
-
+  const [text, setText] = useState('');
+  const [otherUserName, setOtherUserName] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const [otherUser, setOtherUser] = useState<ProfileRow | null>(null);
-  const [loadingOther, setLoadingOther] = useState(true);
+  // ---- Load current user once ----
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (!mounted) return;
+      if (error) {
+        console.error('Error getting current user in DMThread', error);
+        return;
+      }
+      setCurrentUserId(data.user?.id ?? null);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-  // -------- Load current user & messages ----------
+  // ---- Load messages ----
   const loadMessages = useCallback(async () => {
     try {
       setLoading(true);
 
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        console.error('Error getting user in DMThread', userError);
-        setMessages([]);
-        setCurrentUserId(null);
-        return;
-      }
-
-      setCurrentUserId(user.id);
-
       const { data, error } = await supabase
         .from('messages')
-        .select('id, conversation_id, sender_id, body, created_at')
+        .select('id, sender_id, body, created_at')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
 
@@ -87,52 +79,60 @@ export default function DMThreadScreen() {
     }
   }, [conversationId]);
 
-  // -------- Load other participant info ----------
+  // ---- Load "other user" for header ----
   const loadOtherUser = useCallback(async () => {
     try {
-      setLoadingOther(true);
-
       const {
         data: { user },
         error: userError,
       } = await supabase.auth.getUser();
 
       if (userError || !user) {
-        console.error('Error getting user in loadOtherUser', userError);
-        setOtherUser(null);
+        console.error('Error getting user for header', userError);
         return;
       }
 
-      // Get participants + join profiles
-      const { data, error } = await supabase
+      const { data: parts, error: partsErr } = await supabase
         .from('conversation_participants')
-        .select('user_id, profiles ( id, full_name, username, email )')
+        .select('user_id')
         .eq('conversation_id', conversationId);
 
-      if (error) {
-        console.error('Error loading participants for header', error);
-        setOtherUser(null);
+      if (partsErr) {
+        console.error(
+          'Error loading participants for header',
+          partsErr
+        );
         return;
       }
 
-      const participants = (data ?? []) as any[];
+      const participants = parts ?? [];
+      const other = participants.find((p: any) => p.user_id !== user.id);
 
-      // Find the participant that is NOT me
-      const other = participants.find(p => p.user_id !== user.id);
-
-      if (other && other.profiles) {
-        setOtherUser({
-          id: other.profiles.id,
-          full_name: other.profiles.full_name,
-          username: other.profiles.username,
-          email: other.profiles.email,
-        });
-      } else {
-        // Fallback: maybe only you are in this convo for now
-        setOtherUser(null);
+      if (!other) {
+        setOtherUserName('New conversation');
+        return;
       }
-    } finally {
-      setLoadingOther(false);
+
+      const { data: prof, error: profErr } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .eq('id', other.user_id)
+        .single();
+
+      if (profErr || !prof) {
+        console.error(
+          'Error loading other user profile for header',
+          profErr
+        );
+        setOtherUserName('Conversation');
+        return;
+      }
+
+      const email: string = (prof.email as string) ?? '';
+      const localPart = email.split('@')[0] || email;
+      setOtherUserName(localPart);
+    } catch (e) {
+      console.error('Unexpected error loading header user', e);
     }
   }, [conversationId]);
 
@@ -141,19 +141,29 @@ export default function DMThreadScreen() {
     loadOtherUser();
   }, [loadMessages, loadOtherUser]);
 
-  // -------- Sending a message ----------
+  // ---- Send a message ----
   const handleSend = async () => {
-    const text = input.trim();
-    if (!text || !currentUserId) return;
+    const body = text.trim();
+    if (!body || sending) return;
 
     setSending(true);
     try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error('Error getting user for send', userError);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('messages')
         .insert({
           conversation_id: conversationId,
-          sender_id: currentUserId,
-          body: text,
+          sender_id: user.id,
+          body,
         })
         .select()
         .single();
@@ -164,14 +174,17 @@ export default function DMThreadScreen() {
       }
 
       setMessages(prev => [...prev, data as MessageRow]);
-      setInput('');
+      setText('');
     } finally {
       setSending(false);
     }
   };
 
-  const renderMessage = ({ item }: { item: MessageRow }) => {
-    const isMine = item.sender_id === currentUserId;
+  // ---- Render each message ----
+  const renderItem = ({ item }: { item: MessageRow }) => {
+    const isMine =
+      currentUserId != null && item.sender_id === currentUserId;
+
     return (
       <View
         style={[
@@ -179,8 +192,20 @@ export default function DMThreadScreen() {
           isMine ? styles.messageMine : styles.messageTheirs,
         ]}
       >
-        <Text style={styles.messageText}>{item.body}</Text>
-        <Text style={styles.messageTime}>
+        <Text
+          style={[
+            styles.messageText,
+            isMine && { color: 'white' },
+          ]}
+        >
+          {item.body}
+        </Text>
+        <Text
+          style={[
+            styles.messageTime,
+            isMine && { color: '#e0dfff' },
+          ]}
+        >
           {new Date(item.created_at).toLocaleTimeString([], {
             hour: 'numeric',
             minute: '2-digit',
@@ -190,87 +215,63 @@ export default function DMThreadScreen() {
     );
   };
 
-  const headerDisplayName = () => {
-    if (!otherUser) return 'New conversation';
-    return (
-      otherUser.full_name ||
-      otherUser.username ||
-      otherUser.email ||
-      'Conversation'
-    );
-  };
-
-  const headerInitial = () => {
-    const name = headerDisplayName();
-    return name[0]?.toUpperCase() ?? '?';
-  };
-
   return (
     <SafeAreaView style={styles.root}>
-      {/* 🔝 Header with other user */}
-      <View style={styles.threadHeader}>
-        <View style={styles.headerAvatar}>
-          <Text style={styles.headerAvatarText}>{headerInitial()}</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>{headerDisplayName()}</Text>
-          <Text style={styles.headerSubtitle}>
-            {loadingOther ? 'Loading…' : 'Direct message'}
-          </Text>
-        </View>
-      </View>
-
       <KeyboardAvoidingView
-        style={styles.flex}
+        style={styles.root}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        keyboardVerticalOffset={80}
       >
-        <View style={styles.flex}>
-          {loading ? (
-            <View style={styles.center}>
-              <ActivityIndicator size="small" color={PURPLE} />
-              <Text style={{ marginTop: 8, color: '#555' }}>
-                Loading messages…
-              </Text>
-            </View>
-          ) : messages.length === 0 ? (
-            <View style={styles.center}>
-              <Text style={styles.emptyTitle}>No messages yet</Text>
-              <Text style={styles.emptySubtitle}>
-                Say hi to start the conversation.
-              </Text>
-            </View>
-          ) : (
-            <FlatList
-              data={messages}
-              keyExtractor={item => item.id.toString()}
-              renderItem={renderMessage}
-              contentContainerStyle={styles.messagesList}
-            />
-          )}
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backText}>{'< Back'}</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>
+            {otherUserName ?? 'Conversation'}
+          </Text>
+          <View style={{ width: 50 }} />
         </View>
+
+        {/* Messages */}
+        {loading ? (
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptySubtitle}>Loading messages…</Text>
+          </View>
+        ) : messages.length === 0 ? (
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyTitle}>No messages yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Say hi to start the conversation.
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={messages}
+            keyExtractor={item => item.id.toString()}
+            contentContainerStyle={styles.listContent}
+            renderItem={renderItem}
+          />
+        )}
 
         {/* Input bar */}
         <View style={styles.inputBar}>
           <TextInput
             style={styles.input}
-            value={input}
-            onChangeText={setInput}
             placeholder="Message..."
-            placeholderTextColor="#999"
+            value={text}
+            onChangeText={setText}
             multiline
           />
           <TouchableOpacity
             style={[
               styles.sendButton,
-              (!input.trim() || sending) && { opacity: 0.5 },
+              (!text.trim() || sending) && { opacity: 0.5 },
             ]}
             onPress={handleSend}
-            disabled={!input.trim() || sending}
+            disabled={!text.trim() || sending}
           >
-            <Text style={styles.sendButtonText}>
-              {sending ? '...' : 'Send'}
-            </Text>
+            <Text style={styles.sendText}>Send</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -283,48 +284,55 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BG,
   },
-  flex: {
-    flex: 1,
-  },
-  // Header styles
-  threadHeader: {
+  header: {
+    height: 52,
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 6,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.08)',
-    backgroundColor: 'rgba(247,238,219,0.97)',
+    justifyContent: 'space-between',
   },
-  headerAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#e0d2ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  headerAvatarText: {
-    fontWeight: '700',
-    color: '#4a2a8a',
+  backText: {
+    fontSize: 14,
+    color: PURPLE,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
     color: '#3f2b64',
   },
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#7a6c88',
-    marginTop: 2,
+  listContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-
-  center: {
+  messageBubble: {
+    maxWidth: '75%',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 14,
+    marginVertical: 4,
+  },
+  messageMine: {
+    backgroundColor: PURPLE,
+    alignSelf: 'flex-end',
+  },
+  messageTheirs: {
+    backgroundColor: 'white',
+    alignSelf: 'flex-start',
+  },
+  messageText: {
+    color: '#111',
+  },
+  messageTime: {
+    fontSize: 10,
+    color: '#777',
+    marginTop: 2,
+    textAlign: 'right',
+  },
+  emptyWrap: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 24,
   },
   emptyTitle: {
     fontSize: 18,
@@ -335,64 +343,35 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: 14,
     color: '#666',
-  },
-  messagesList: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    paddingBottom: 12,
-  },
-  messageBubble: {
-    maxWidth: '80%',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
-    marginVertical: 4,
-  },
-  messageMine: {
-    alignSelf: 'flex-end',
-    backgroundColor: PURPLE,
-  },
-  messageTheirs: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#ffffff',
-  },
-  messageText: {
-    color: '#111',
-  },
-  messageTime: {
-    marginTop: 2,
-    fontSize: 10,
-    color: '#666',
-    textAlign: 'right',
+    textAlign: 'center',
   },
   inputBar: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: 10,
+    alignItems: 'center',
+    paddingHorizontal: 8,
     paddingVertical: 6,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.12)',
+    borderTopColor: '#ddd',
     backgroundColor: '#fff',
   },
   input: {
     flex: 1,
     minHeight: 40,
-    maxHeight: 120,
+    maxHeight: 100,
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderRadius: 18,
-    backgroundColor: '#f2f2f2',
-    fontSize: 14,
+    backgroundColor: '#f5f5f5',
   },
   sendButton: {
     marginLeft: 8,
-    borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 8,
+    borderRadius: 18,
     backgroundColor: PURPLE,
   },
-  sendButtonText: {
-    color: 'white',
+  sendText: {
+    color: '#fff',
     fontWeight: '600',
   },
 });

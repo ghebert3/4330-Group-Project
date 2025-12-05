@@ -1,4 +1,3 @@
-// src/navigation/RootNavigator.tsx
 import React from 'react';
 import { Image } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -33,7 +32,6 @@ import type {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
-// You can type this if you want, but `any` / untyped is fine:
 const MeetupsStack = createNativeStackNavigator();
 
 const LSU_PURPLE = '#461D7C';
@@ -81,9 +79,8 @@ function AppTabs() {
             case 'Home':
               iconName = focused ? 'home' : 'home-outline';
               break;
-            case 'Search':
-              // Search tab = Messages (DM list)
-              iconName = focused ? 'search' : 'search-outline';
+            case 'Messages':
+              iconName = focused ? 'chatbubbles-sharp' : 'chatbubble-outline';
               break;
             case 'Meetups':
               iconName = focused ? 'cloud' : 'cloud-outline';
@@ -106,8 +103,7 @@ function AppTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      {/* 👇 Search tab opens the DM list */}
-      <Tab.Screen name="Search" component={DMListScreen} />
+      <Tab.Screen name="Messages" component={DMListScreen} />
       <Tab.Screen name="Discover" component={DiscoverScreen} />
       <Tab.Screen name="Meetups" component={MeetupsStackNavigator} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
