@@ -374,6 +374,65 @@ export default function MeetupsScreen() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedMeetup, setSelectedMeetup] = useState<Meetup | null>(null);
 
+    // ----- REPORTING STATE -----
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reportMeetupId, setReportMeetupId] = useState<string | null>(null);
+  const [reportMeetupTitle, setReportMeetupTitle] = useState<string>('');
+  const [reportReason, setReportReason] = useState<
+    'safety' | 'harassment' | 'spam' | 'inappropriate' | 'other'
+  >('safety');
+  const [reportDetails, setReportDetails] = useState<string>('');
+
+  function openReportModalForMeetup(meetup: Meetup) {
+    setReportMeetupId(meetup.id);
+    setReportMeetupTitle(meetup.title);
+    setReportReason('safety');
+    setReportDetails('');
+    setReportModalVisible(true);
+  }
+
+  async function handleSubmitReport() {
+    if (!reportMeetupId) return;
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      Alert.alert('Not signed in', 'You must be logged in to report a meetup.');
+      return;
+    }
+
+    const numericMeetupId = Number(reportMeetupId);
+    if (Number.isNaN(numericMeetupId)) {
+      Alert.alert('Error', 'Something went wrong with this meetup ID.');
+      return;
+    }
+
+    const { error } = await supabase.from('reports').insert({
+      reporter: user.id,                   
+      meetup_id: numericMeetupId,           
+      reason: reportReason,                 
+      category: reportReason,             
+      description: reportDetails.trim() || null, 
+    });
+
+    if (error) {
+      console.error('Report error:', error);
+      Alert.alert('Error', 'Could not submit your report. Please try again.');
+      return;
+    }
+
+    setReportModalVisible(false);
+    setReportMeetupId(null);
+    setReportMeetupTitle('');
+    setReportReason('safety');
+    setReportDetails('');
+    Alert.alert('Thank you', 'Your report has been submitted.');
+  }
+
+
   const ItemSep = useMemo(() => <View style={{ height: 18 }} />, []);
 
   const handleCreatePress = () => {
@@ -737,54 +796,155 @@ export default function MeetupsScreen() {
         </Modal>
 
         {/* Meetup Details Modal */}
+<Modal
+  visible={detailsOpen}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setDetailsOpen(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalCard}>
+      {selectedMeetup && (
+        <>
+          <Text style={styles.modalTitle}>{selectedMeetup.title}</Text>
+
+          <Text style={styles.modalLabel}>Location</Text>
+          <Text style={styles.detailText}>{selectedMeetup.location}</Text>
+
+          <Text style={styles.modalLabel}>Description</Text>
+          <Text style={styles.detailText}>{selectedMeetup.description}</Text>
+
+          <Text style={styles.modalLabel}>When</Text>
+          <Text style={styles.detailText}>
+            {new Date(selectedMeetup.startsAt).toLocaleString()}
+          </Text>
+
+          <Text style={styles.modalLabel}>Spots</Text>
+          <Text style={styles.detailText}>
+            {selectedMeetup.currentCount}/{selectedMeetup.capacity} people
+            {selectedMeetup.joined ? ' (You joined)' : ''}
+          </Text>
+
+          {currentUserId === selectedMeetup.host && (
+            <>
+              <Text style={styles.modalLabel}>Participants (emails)</Text>
+              {loadingParticipants && (
+                <Text style={styles.detailText}>Loading…</Text>
+              )}
+              {!loadingParticipants && participants.length === 0 && (
+                <Text style={styles.detailText}>Nobody has joined yet.</Text>
+              )}
+              {!loadingParticipants &&
+                participants.map(p => (
+                  <Text key={p.id} style={styles.detailText}>
+                    • {p.email}
+                  </Text>
+                ))}
+            </>
+          )}
+
+          {/* 🔽 ADD THIS: report link for any existing meetup */}
+          <TouchableOpacity
+            style={styles.reportLink}
+            onPress={() => openReportModalForMeetup(selectedMeetup)}
+          >
+            <Text style={styles.reportLinkText}>Report this meetup</Text>
+          </TouchableOpacity>
+
+          <View style={styles.modalButtonsRow}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalCancel]}
+              onPress={() => setDetailsOpen(false)}
+            >
+              <Text style={styles.modalButtonText}>Close</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalCreate]}
+              onPress={handleJoinFromDetails}
+            >
+              <Text style={styles.modalButtonText}>
+                {selectedMeetup.joined ? 'Leave' : 'Join'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+    </View>
+  </View>
+</Modal>
+
+
         <Modal
-          visible={!!selectedMeetup}
+          visible={reportModalVisible}
           transparent
           animationType="fade"
-          onRequestClose={() => setSelectedMeetup(null)}
+          onRequestClose={() => setReportModalVisible(false)}
         >
           <View style={styles.modalBackdrop}>
             <View style={styles.modalCard}>
-              {selectedMeetup && (
-                <>
-                  <Text style={styles.modalTitle}>{selectedMeetup.title}</Text>
-                  <Text style={styles.modalLabel}>
-                    Location: {selectedMeetup.location}
-                  </Text>
-                  <Text style={styles.modalLabel}>
-                    Spots: {selectedMeetup.currentCount}/{selectedMeetup.capacity}
-                  </Text>
-                  <Text style={styles.modalLabel}>
-                    Starts at: {new Date(selectedMeetup.startsAt).toLocaleString()}
-                  </Text>
+              <Text style={styles.modalTitle}>Report meetup</Text>
 
-                  <Text style={styles.modalDescription}>
-                    {selectedMeetup.description}
-                  </Text>
+              {reportMeetupTitle ? (
+                <Text style={[styles.detailText, { marginBottom: 4 }]}>
+                  Meetup: {reportMeetupTitle}
+                </Text>
+              ) : null}
 
-                  <View style={styles.modalButtonsRow}>
+              <Text style={styles.modalLabel}>Reason</Text>
+              <View style={styles.reportReasonRow}>
+                {(['safety', 'harassment', 'spam', 'inappropriate', 'other'] as const).map(
+                  (reason) => (
                     <TouchableOpacity
-                      style={[styles.modalButton, styles.modalCancel]}
-                      onPress={() => setSelectedMeetup(null)}
+                      key={reason}
+                      style={[
+                        styles.reportReasonChip,
+                        reportReason === reason && styles.reportReasonChipActive,
+                      ]}
+                      onPress={() => setReportReason(reason)}
                     >
-                      <Text style={styles.modalButtonText}>Close</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.modalButton, styles.modalConfirm]}
-                      onPress={() => selectedMeetup && handleJoin(selectedMeetup.id)}
-                    >
-                      <Text style={styles.modalButtonText}>
-                        {selectedMeetup.joined ? 'Leave' : 'Join'}
+                      <Text
+                        style={[
+                          styles.reportReasonText,
+                          reportReason === reason && styles.reportReasonTextActive,
+                        ]}
+                      >
+                        {reason}
                       </Text>
                     </TouchableOpacity>
-                  </View>
-                </>
-              )}
+                  )
+                )}
+              </View>
+
+              <Text style={styles.modalLabel}>Details (optional)</Text>
+              <TextInput
+                style={styles.reportInput}
+                multiline
+                placeholder="Describe what happened. Include behavior, time, and other context."
+                placeholderTextColor="#888"
+                value={reportDetails}
+                onChangeText={setReportDetails}
+              />
+
+              <View style={styles.reportButtonsRow}>
+                <TouchableOpacity
+                  style={styles.reportCancelButton}
+                  onPress={() => setReportModalVisible(false)}
+                >
+                  <Text style={styles.reportCancelText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.reportSubmitButton}
+                  onPress={handleSubmitReport}
+                >
+                  <Text style={styles.reportSubmitText}>Submit</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         </Modal>
-      </SafeAreaView>
+        </SafeAreaView>
     </FadeInView>
   );
 }
@@ -804,12 +964,20 @@ const styles = StyleSheet.create({
     pointerEvents: 'none',
   },
 
+  // Backdrop/overlay used by all modals
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
   modalCard: {
     width: '84%',
     backgroundColor: '#FFF7E8',
@@ -849,6 +1017,12 @@ const styles = StyleSheet.create({
     color: '#4a3b3b',
     lineHeight: 20,
   },
+  detailText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 6,
+  },
+
   modalButtonsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -866,7 +1040,89 @@ const styles = StyleSheet.create({
   modalConfirm: {
     backgroundColor: COLORS.purple,
   },
+  // used by Join/Leave button in details
+  modalCreate: {
+    backgroundColor: COLORS.purple,
+  },
   modalButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  // ----- REPORTING STYLES -----
+  reportLink: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+  },
+  reportLinkText: {
+    fontSize: 13,
+    color: '#C62828',
+    textDecorationLine: 'underline',
+  },
+
+  reportReasonRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  reportReasonChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E0C9A8',
+    backgroundColor: '#FFF',
+  },
+  reportReasonChipActive: {
+    backgroundColor: COLORS.purple,
+    borderColor: COLORS.purple,
+  },
+  reportReasonText: {
+    fontSize: 12,
+    color: '#555',
+  },
+  reportReasonTextActive: {
+    color: '#fff',
+  },
+  reportInput: {
+    borderWidth: 1,
+    borderColor: '#E0C9A8',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: 'white',
+    fontSize: 14,
+    minHeight: 80,
+    maxHeight: 140,
+    textAlignVertical: 'top',
+  },
+  reportButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 16,
+  },
+  reportCancelButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    marginRight: 8,
+    backgroundColor: '#E0D0C0',
+  },
+  reportCancelText: {
+    color: '#333',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  reportSubmitButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: COLORS.purpleDark,
+  },
+  reportSubmitText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '700',
@@ -949,7 +1205,7 @@ const stylesCloud = StyleSheet.create({
     left: 10,
     width: '92%',
     height: 18,
-    backgroundColor: '#D9C6FF',
+    backgroundColor: COLORS.cloudShadowPlate,
     borderRadius: 20,
     alignSelf: 'center',
     opacity: 1,
@@ -958,7 +1214,7 @@ const stylesCloud = StyleSheet.create({
   cloudBase: {
     width: '100%',
     height: 58,
-    backgroundColor: '#F2A51A',
+    backgroundColor: COLORS.cloud,
     borderRadius: 35,
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
@@ -973,7 +1229,7 @@ const stylesCloud = StyleSheet.create({
     top: -26,
     width: '48%',
     height: 70,
-    backgroundColor: '#F2A51A',
+    backgroundColor: COLORS.cloud,
     borderRadius: 90,
     zIndex: 3,
   },
@@ -983,7 +1239,7 @@ const stylesCloud = StyleSheet.create({
     left: 12,
     width: '28%',
     height: 48,
-    backgroundColor: '#F2A51A',
+    backgroundColor: COLORS.cloud,
     borderRadius: 50,
     zIndex: 3,
   },
@@ -993,7 +1249,7 @@ const stylesCloud = StyleSheet.create({
     right: 12,
     width: '28%',
     height: 46,
-    backgroundColor: '#F2A51A',
+    backgroundColor: COLORS.cloud,
     borderRadius: 50,
     zIndex: 3,
   },
