@@ -1,25 +1,19 @@
+// src/navigation/RootNavigator.tsx
 import React from 'react';
 import { Image } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { navigationRef } from '../navigation/navigationRef';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+
 import MeetupsScreen from '../screens/meetups';
 import MeetupsLoading from '../screens/MeetupsLoading';
 import DiscoverScreen from '../screens/DiscoverScreen';
 import DMThreadScreen from '../screens/DMThreadScreen';
 import DMListScreen from '../screens/DMListScreen';
 import DMNewChatScreen from '../screens/DMNewChatScreen';
-import { Ionicons } from '@expo/vector-icons';
-import * as Linking from 'expo-linking';
-import WhirlIcon from '../../assets/icons/whirl.png';
 
-import type {
-  RootStackParamList,
-  AppTabParamList,
-} from '../navigation/types';
-
-// Screens
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -29,35 +23,35 @@ import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 
+import WhirlIcon from '../../assets/icons/whirl.png';
+
+import type {
+  RootStackParamList,
+  AppTabParamList,
+} from '../navigation/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<AppTabParamList>();
+
+// You can type this if you want, but `any` / untyped is fine:
 const MeetupsStack = createNativeStackNavigator();
 
 const LSU_PURPLE = '#461D7C';
 
-const linking = {
-  prefixes: [Linking.createURL('/'), 'whirl://'],
-  config: {
-    screens: {
-      Startup: 'startup',
-      Login: 'login',
-      SignUp: 'signup',
-      Restart: 'restart',
-      ChangePassword: 'reset-password',
-      Onboarding: 'onboarding',
-      AppTabs: {
-        screens: {
-          Home: 'home',
-          Search: 'search',
-          Discover: 'discover',
-          Meetups: 'meetups',
-          Profile: 'profile',
-        },
-      },
-    },
-  },
-};
+function MeetupsStackNavigator() {
+  return (
+    <MeetupsStack.Navigator screenOptions={{ headerShown: false }}>
+      <MeetupsStack.Screen
+        name="MeetupsLoading"
+        component={MeetupsLoading}
+      />
+      <MeetupsStack.Screen
+        name="MeetupsMain"
+        component={MeetupsScreen}
+      />
+    </MeetupsStack.Navigator>
+  );
+}
 
 function AppTabs() {
   return (
@@ -88,6 +82,7 @@ function AppTabs() {
               iconName = focused ? 'home' : 'home-outline';
               break;
             case 'Search':
+              // Search tab = Messages (DM list)
               iconName = focused ? 'search' : 'search-outline';
               break;
             case 'Meetups':
@@ -111,6 +106,7 @@ function AppTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
+      {/* 👇 Search tab opens the DM list */}
       <Tab.Screen name="Search" component={DMListScreen} />
       <Tab.Screen name="Discover" component={DiscoverScreen} />
       <Tab.Screen name="Meetups" component={MeetupsStackNavigator} />
@@ -119,37 +115,25 @@ function AppTabs() {
   );
 }
 
-function MeetupsStackNavigator() {
-  return (
-    <MeetupsStack.Navigator screenOptions={{ headerShown: false }}>
-      <MeetupsStack.Screen
-        name="MeetupsLoading"
-        component={MeetupsLoading}
-      />
-      <MeetupsStack.Screen
-        name="MeetupsMain"
-        component={MeetupsScreen}
-      />
-    </MeetupsStack.Navigator>
-  );
-}
-
 export default function RootNavigator() {
   return (
-    <NavigationContainer ref={navigationRef} linking={linking}>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         screenOptions={{ headerShown: false }}
         initialRouteName="Startup"
       >
+        {/* Startup / Auth */}
         <Stack.Screen name="Startup" component={StartupScreen} />
-
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Restart" component={RestartScreen} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
 
+        {/* Main app (tabs) */}
         <Stack.Screen name="AppTabs" component={AppTabs} />
+
+        {/* DM stack screens */}
         <Stack.Screen name="DMThread" component={DMThreadScreen} />
         <Stack.Screen name="DMNewChat" component={DMNewChatScreen} />
       </Stack.Navigator>
