@@ -7,6 +7,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MeetupsScreen from '../screens/meetups';
 import MeetupsLoading from '../screens/MeetupsLoading';
 import DiscoverScreen from '../screens/DiscoverScreen';
+import DMThreadScreen from '../screens/DMThreadScreen';
+import DMListScreen from '../screens/DMListScreen';
+import DMNewChatScreen from '../screens/DMNewChatScreen';
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 import WhirlIcon from '../../assets/icons/whirl.png';
@@ -69,8 +72,8 @@ function AppTabs() {
               <Image
                 source={WhirlIcon}
                 style={{
-                    width: focused ? size + 8 : size + 6,
-                    height: focused ? size + 8 : size + 6,
+                  width: focused ? size + 8 : size + 6,
+                  height: focused ? size + 8 : size + 6,
                   tintColor: focused ? LSU_PURPLE : color,
                   resizeMode: 'contain',
                 }}
@@ -108,7 +111,7 @@ function AppTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Search" component={HomeScreen} />
+      <Tab.Screen name="Search" component={DMListScreen} />
       <Tab.Screen name="Discover" component={DiscoverScreen} />
       <Tab.Screen name="Meetups" component={MeetupsStackNavigator} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
@@ -147,6 +150,8 @@ export default function RootNavigator() {
         <Stack.Screen name="Onboarding" component={OnboardingScreen} />
 
         <Stack.Screen name="AppTabs" component={AppTabs} />
+        <Stack.Screen name="DMThread" component={DMThreadScreen} />
+        <Stack.Screen name="DMNewChat" component={DMNewChatScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
