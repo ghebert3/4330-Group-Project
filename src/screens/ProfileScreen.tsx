@@ -12,7 +12,9 @@ import {
   Dimensions,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import AnimatedTag from "../components/AnimatedTag";
 import { useFonts } from "expo-font";
+import FadeInView from "../components/FadeInView";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
@@ -28,17 +30,21 @@ export default function ProfileScreen() {
   /* ----- STATE ----- */
   const [profilePic, setProfilePic] = useState<string | null>(null);
 
-  const [photos, setPhotos] = useState<{ id: number; uri: string; caption: string }[]>([]);
+  const [photos, setPhotos] = useState<
+    { id: number; uri: string; caption: string }[]
+  >([]);
   const [profileLoading, setProfileLoading] = useState(true);
   const [photosLoading, setPhotosLoading] = useState(true);
+
+  // New: separate saving state for the Save changes button
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadPhotos() {
-
       setPhotosLoading(true);
-      
+
       try {
         const {
           data: { user },
@@ -63,7 +69,7 @@ export default function ProfileScreen() {
 
         if (isMounted && data) {
           setPhotos(
-            data.map(p => ({
+            data.map((p) => ({
               id: p.id,
               uri: p.image_url || "",
               caption: p.caption || "",
@@ -85,7 +91,9 @@ export default function ProfileScreen() {
     };
   }, []);
 
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(
+    null
+  );
   const [photoModal, setPhotoModal] = useState(false);
   const [largeImageHeight, setLargeImageHeight] = useState<number>(400);
   const [editPhotoModal, setEditPhotoModal] = useState(false);
@@ -117,14 +125,15 @@ export default function ProfileScreen() {
   const [bio, setBio] = useState("");
   const [editBio, setEditBio] = useState("");
 
-  const [connections] = useState<{ id: string; name: string; avatar: string; major: string }[]>([]);
+  const [connections] = useState<
+    { id: string; name: string; avatar: string; major: string }[]
+  >([]);
 
-    useEffect(() => {
+  useEffect(() => {
     loadProfile();
   }, []);
 
   async function loadProfile() {
-
     setProfileLoading(true);
 
     try {
@@ -163,6 +172,8 @@ export default function ProfileScreen() {
 
   async function saveProfile() {
     try {
+      setIsSavingProfile(true);
+
       const { error } = await supabase.rpc("update_profile", {
         p_display_name: name,
         p_bio: bio,
@@ -177,13 +188,13 @@ export default function ProfileScreen() {
       }
 
       alert("Profile saved.");
+      setSettingsModal(false);
     } catch (err) {
       console.error("Unexpected error saving profile:", err);
     } finally {
-      setProfileLoading(false);
+      setIsSavingProfile(false);
     }
   }
-
 
   /* ----- SIGN OUT ----- */
   async function handleSignOut() {
@@ -212,7 +223,7 @@ export default function ProfileScreen() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 1,
@@ -284,8 +295,6 @@ export default function ProfileScreen() {
     }
   }
 
-
-
   /* ----- ADD NEW PHOTO ----- */
   const [addPhotoModal, setAddPhotoModal] = useState(false);
   const [newPhotoUri, setNewPhotoUri] = useState<string | null>(null);
@@ -293,17 +302,18 @@ export default function ProfileScreen() {
 
   async function pickNewPhoto() {
     try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
       if (!permissionResult.granted) {
         alert("Permission to access camera roll is required!");
         return;
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
-        aspect: [1,1],
+        aspect: [1, 1],
         quality: 0.8,
       });
 
@@ -342,9 +352,9 @@ export default function ProfileScreen() {
       const ext = newPhotoUri.split(".").pop() || "jpg";
       const filePath = `${user.id}/posts/${Date.now()}.${ext}`;
 
-      // 3) Upload to Supabase Storage (reusing 'avatars' bucket + path rule)
+      // 3) Upload to Supabase Storage (post-images bucket)
       const { data: storageData, error: storageError } = await supabase.storage
-        .from("post-images") // or create a 'post-images' bucket later
+        .from("post-images")
         .upload(filePath, bytes, {
           upsert: false,
           contentType: "image/jpeg",
@@ -382,10 +392,10 @@ export default function ProfileScreen() {
 
       // 6) Update local state for immediate UI update
       setPhotos((prev) => [
-        { 
+        {
           id: inserted.id,
-          uri: imageUrl, 
-          caption: newPhotoCaption, 
+          uri: imageUrl,
+          caption: newPhotoCaption,
         },
         ...prev,
       ]);
@@ -398,7 +408,6 @@ export default function ProfileScreen() {
       alert("Unexpected error saving photo. Please try again.");
     }
   }
-
 
   /* ----- VIEW/EDIT PHOTO ----- */
   function openPhoto(index: number) {
@@ -453,7 +462,7 @@ export default function ProfileScreen() {
     const photoToDelete = photos[selectedPhotoIndex];
 
     // Optimistically update UI
-    setPhotos(prev => prev.filter((_, i) => i !== selectedPhotoIndex));
+    setPhotos((prev) => prev.filter((_, i) => i !== selectedPhotoIndex));
     setEditPhotoModal(false);
     setSelectedPhotoIndex(null);
 
@@ -482,7 +491,6 @@ export default function ProfileScreen() {
       console.log("deletePhoto – unexpected error:", e);
     }
   }
-
 
   /* ----- ADD NEW TAG ----- */
   function addTag() {
@@ -516,6 +524,7 @@ export default function ProfileScreen() {
     setTags(tags.filter((_, i) => i !== index));
     setEditTagModal(false);
     setEditingTagIndex(null);
+    setEditTagValue("");
   }
 
   /* ----- ADD LOOKING FOR ----- */
@@ -562,13 +571,13 @@ export default function ProfileScreen() {
     setNameEditModal(true);
   }
 
-  async function saveNameEdit() {
-  if (editName.trim().length > 0) {
-    setName(editName.trim());
+  // Updated: only updates local state, no Supabase call
+  function saveNameEdit() {
+    if (editName.trim().length > 0) {
+      setName(editName.trim());
+    }
+    setNameEditModal(false);
   }
-  setNameEditModal(false);
-  await saveProfile();
-}
 
   function openBioEdit() {
     setEditBio(bio);
@@ -576,12 +585,11 @@ export default function ProfileScreen() {
     setBioEditModal(true);
   }
 
-  async function saveBioEdit() {
-  setBio(editBio.trim());
-  setBioEditModal(false);
-  await saveProfile();
-}
-
+  // Updated: only updates local state, no Supabase call
+  function saveBioEdit() {
+    setBio(editBio.trim());
+    setBioEditModal(false);
+  }
 
   /* ----- RESET PASSWORD ----- */
   async function handleResetPassword() {
@@ -604,8 +612,7 @@ export default function ProfileScreen() {
     setProfilePic(null);
   }
 
-    // ---- FULL SCREEN LOADING ----
-  // ---- FULL SCREEN LOADING (same visuals as MeetupsLoading) ----
+  // ---- FULL SCREEN LOADING ----
   const isLoading = profileLoading || photosLoading;
 
   if (isLoading) {
@@ -631,20 +638,19 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-
-      {/* SETTINGS ICON */}
-      <Pressable style={styles.settingsIcon} onPress={openSettings}>
-        <Ionicons name="settings-outline" size={26} color="#555" />
-      </Pressable>
+    <FadeInView style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* SETTINGS ICON */}
+        <Pressable style={styles.settingsIcon} onPress={openSettings}>
+          <Ionicons name="settings-outline" size={26} color="#555" />
+        </Pressable>
 
       <Pressable
-        style={{ position: 'absolute', top: 50, left: 20, padding: 6 }}
-        onPress={() => navigation.navigate('Onboarding')}
+        style={{ position: "absolute", top: 50, left: 20, padding: 6 }}
+        onPress={() => navigation.navigate("Onboarding")}
       >
-        <Text style={{ color: '#888', fontSize: 11 }}>Dev Onboarding</Text>
+        <Text style={{ color: "#888", fontSize: 11 }}>Dev Onboarding</Text>
       </Pressable>
-
 
       {/* PROFILE IMAGE */}
       <Pressable onPress={pickProfilePicture} style={styles.imageWrapper}>
@@ -664,21 +670,25 @@ export default function ProfileScreen() {
       {bio && bio.trim().length > 0 ? (
         <Text style={styles.bioText}>{bio}</Text>
       ) : (
-        <Pressable onPress={openSettings} style={styles.bioPlaceholderWrapper}>
+        <Pressable
+          onPress={openSettings}
+          style={styles.bioPlaceholderWrapper}
+        >
           <Text style={styles.bioPlaceholder}>Add a short bio</Text>
         </Pressable>
       )}
 
       {/* TAGS */}
-      <View style={styles.tagContainer}>
-        {tags.map((t, i) => (
-          <Pressable key={i} style={styles.tag} onPress={() => openEditTag(i)}>
-            <Text style={styles.tagText}>{t}</Text>
-          </Pressable>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }}>
+        {tags.map((tag, index) => (
+      <AnimatedTag key={`${tag}-${index}`} label={tag} />
         ))}
 
         {/* Add Tag Button */}
-        <Pressable style={styles.addTagButton} onPress={() => setTagModal(true)}>
+        <Pressable
+          style={styles.addTagButton}
+          onPress={() => setTagModal(true)}
+        >
           <Text style={{ color: "#555", fontFamily: "CherryBomb" }}>+ Tag</Text>
         </Pressable>
       </View>
@@ -691,13 +701,21 @@ export default function ProfileScreen() {
           {lookingForItems.map((item, i) => (
             <View key={i} style={styles.lookingForItem}>
               <Text style={styles.lookingForText}>{item}</Text>
-              <Pressable onPress={() => removeLookingFor(i)} style={styles.removeBtn}>
+              <Pressable
+                onPress={() => removeLookingFor(i)}
+                style={styles.removeBtn}
+              >
                 <Text style={styles.removeBtnText}>×</Text>
               </Pressable>
             </View>
           ))}
-          <Pressable style={styles.addLookingForBtn} onPress={() => setLookingForModal(true)}>
-            <Text style={{ color: "#555", fontFamily: "CherryBomb" }}>+ Add</Text>
+          <Pressable
+            style={styles.addLookingForBtn}
+            onPress={() => setLookingForModal(true)}
+          >
+            <Text style={{ color: "#555", fontFamily: "CherryBomb" }}>
+              + Add
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -709,7 +727,11 @@ export default function ProfileScreen() {
           <Pressable onPress={() => setConnectionsModal(true)}>
             <View style={styles.statBlock}>
               <Text style={styles.statNumber}>{connections.length}</Text>
-              <Text style={[styles.statLabel, { color: "#5903C3" }]}>Campus Connections</Text>
+              <Text
+                style={[styles.statLabel, { color: "#5903C3" }]}
+              >
+                Campus Connections
+              </Text>
             </View>
           </Pressable>
           <Stat number="0" label="People met" />
@@ -719,9 +741,14 @@ export default function ProfileScreen() {
       {/* PHOTO ROW (click to enlarge) */}
       <View style={styles.photoRow}>
         {photos.map((p, i) => (
-          <Pressable key={i} onPress={() => openPhoto(i)}>
-            <Image source={{ uri: p.uri }} style={styles.smallImage} />
-          </Pressable>
+          <FadeInView
+            key={p.id ?? i}
+            delay={220 + i * 60}
+            >
+            <Pressable key={i} onPress={() => openPhoto(i)}>
+              <Image source={{ uri: p.uri }} style={styles.smallImage} />
+            </Pressable>
+          </FadeInView>
         ))}
       </View>
 
@@ -730,33 +757,40 @@ export default function ProfileScreen() {
         <Text style={styles.addPhotoText}>+ Add Photo</Text>
       </Pressable>
 
-      {/* NAVIGATION BAR */}
-      
-      
-
       {/* VIEW PHOTO MODAL */}
       <Modal visible={photoModal} transparent animationType="fade">
         <View style={styles.photoModalContainer}>
-          <Pressable 
-            style={styles.photoModalClose} 
-            onPress={() => { setPhotoModal(false); setSelectedPhotoIndex(null); }}
+          <Pressable
+            style={styles.photoModalClose}
+            onPress={() => {
+              setPhotoModal(false);
+              setSelectedPhotoIndex(null);
+            }}
           >
             <Ionicons name="close" size={30} color="#fff" />
           </Pressable>
           {selectedPhotoIndex !== null && (
             <View style={styles.photoModalContent}>
               <View style={styles.imageWithCaption}>
-                <Image 
-                  source={{ uri: photos[selectedPhotoIndex]?.uri }} 
-                  style={[styles.largeImage, { height: largeImageHeight }]} 
+                <Image
+                  source={{ uri: photos[selectedPhotoIndex]?.uri }}
+                  style={[
+                    styles.largeImage,
+                    { height: largeImageHeight },
+                  ]}
                 />
-                  {photos[selectedPhotoIndex]?.caption ? (
-                    <View style={styles.captionBubble}>
-                      <Text style={styles.captionText}>{photos[selectedPhotoIndex].caption}</Text>
-                    </View>
-                  ) : null}
+                {photos[selectedPhotoIndex]?.caption ? (
+                  <View style={styles.captionBubble}>
+                    <Text style={styles.captionText}>
+                      {photos[selectedPhotoIndex].caption}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
-              <Pressable style={styles.editPhotoBtn} onPress={openEditPhoto}>
+              <Pressable
+                style={styles.editPhotoBtn}
+                onPress={openEditPhoto}
+              >
                 <Ionicons name="pencil" size={18} color="#fff" />
                 <Text style={styles.editPhotoBtnText}>Edit</Text>
               </Pressable>
@@ -779,14 +813,22 @@ export default function ProfileScreen() {
               multiline
             />
             <View style={styles.modalBtnRow}>
-              <Pressable style={styles.modalBtnDelete} onPress={deletePhoto}>
+              <Pressable
+                style={styles.modalBtnDelete}
+                onPress={deletePhoto}
+              >
                 <Text style={styles.modalBtnText}>Delete</Text>
               </Pressable>
               <Pressable style={styles.modalBtn} onPress={savePhotoEdit}>
                 <Text style={styles.modalBtnText}>Save</Text>
               </Pressable>
             </View>
-            <Pressable onPress={() => { setEditPhotoModal(false); setPhotoModal(true); }}>
+            <Pressable
+              onPress={() => {
+                setEditPhotoModal(false);
+                setPhotoModal(true);
+              }}
+            >
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
           </View>
@@ -799,21 +841,38 @@ export default function ProfileScreen() {
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>Profile Picture</Text>
             <View style={styles.modalBtnRow}>
-              <Pressable style={styles.modalBtnCancel} onPress={() => { setPfpOptionsModal(false); }}>
+              <Pressable
+                style={styles.modalBtnCancel}
+                onPress={() => {
+                  setPfpOptionsModal(false);
+                }}
+              >
                 <Text style={styles.modalBtnCancelText}>Close</Text>
               </Pressable>
-              <Pressable style={styles.modalBtn} onPress={() => { setPfpOptionsModal(false); pickProfilePicture(); }}>
+              <Pressable
+                style={styles.modalBtn}
+                onPress={() => {
+                  setPfpOptionsModal(false);
+                  pickProfilePicture();
+                }}
+              >
                 <Text style={styles.modalBtnText}>Change</Text>
               </Pressable>
             </View>
             <View style={{ height: 8 }} />
-            <Pressable style={styles.modalBtnDelete} onPress={() => { removeProfilePicture(); setPfpOptionsModal(false); }}>
+            <Pressable
+              style={styles.modalBtnDelete}
+              onPress={() => {
+                removeProfilePicture();
+                setPfpOptionsModal(false);
+              }}
+            >
               <Text style={styles.modalBtnText}>Remove</Text>
             </Pressable>
           </View>
         </View>
       </Modal>
-  
+
       {/* NAME EDIT BUBBLE */}
       <Modal visible={nameEditModal} transparent animationType="fade">
         <View style={styles.modalCenter}>
@@ -826,10 +885,22 @@ export default function ProfileScreen() {
               style={styles.bubbleInput}
             />
             <View style={styles.bubbleBtnRow}>
-              <Pressable style={styles.modalIconDelete} onPress={() => { setNameEditModal(false); setSettingsModal(true); }}>
+              <Pressable
+                style={styles.modalIconDelete}
+                onPress={() => {
+                  setNameEditModal(false);
+                  setSettingsModal(true);
+                }}
+              >
                 <Ionicons name="close" size={20} color="#fff" />
               </Pressable>
-              <Pressable style={styles.modalIconSave} onPress={() => { saveNameEdit(); setSettingsModal(true); }}>
+              <Pressable
+                style={styles.modalIconSave}
+                onPress={() => {
+                  saveNameEdit();
+                  setSettingsModal(true);
+                }}
+              >
                 <Ionicons name="checkmark" size={22} color="#fff" />
               </Pressable>
             </View>
@@ -852,10 +923,22 @@ export default function ProfileScreen() {
             />
             <Text style={styles.bioCount}>{editBio.length}/160</Text>
             <View style={styles.bubbleBtnRow}>
-              <Pressable style={styles.modalIconDelete} onPress={() => { setBioEditModal(false); setSettingsModal(true); }}>
+              <Pressable
+                style={styles.modalIconDelete}
+                onPress={() => {
+                  setBioEditModal(false);
+                  setSettingsModal(true);
+                }}
+              >
                 <Ionicons name="close" size={20} color="#fff" />
               </Pressable>
-              <Pressable style={styles.modalIconSave} onPress={() => { saveBioEdit(); setSettingsModal(true); }}>
+              <Pressable
+                style={styles.modalIconSave}
+                onPress={() => {
+                  saveBioEdit();
+                  setSettingsModal(true);
+                }}
+              >
                 <Ionicons name="checkmark" size={22} color="#fff" />
               </Pressable>
             </View>
@@ -863,15 +946,16 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      
-
       {/* ADD PHOTO MODAL */}
       <Modal visible={addPhotoModal} transparent animationType="fade">
         <View style={styles.modalCenter}>
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>Add Photo</Text>
             {newPhotoUri && (
-              <Image source={{ uri: newPhotoUri }} style={styles.previewImage} />
+              <Image
+                source={{ uri: newPhotoUri }}
+                style={styles.previewImage}
+              />
             )}
             <Text style={styles.inputLabel}>Caption (optional)</Text>
             <TextInput
@@ -882,7 +966,13 @@ export default function ProfileScreen() {
               multiline
             />
             <View style={styles.modalBtnRow}>
-              <Pressable style={styles.modalBtnCancel} onPress={() => { setAddPhotoModal(false); setNewPhotoUri(null); }}>
+              <Pressable
+                style={styles.modalBtnCancel}
+                onPress={() => {
+                  setAddPhotoModal(false);
+                  setNewPhotoUri(null);
+                }}
+              >
                 <Text style={styles.modalBtnCancelText}>Cancel</Text>
               </Pressable>
               <Pressable style={styles.modalBtn} onPress={saveNewPhoto}>
@@ -905,7 +995,10 @@ export default function ProfileScreen() {
               style={styles.inputField}
             />
             <View style={styles.modalBtnRow}>
-              <Pressable style={styles.modalBtnCancel} onPress={() => setTagModal(false)}>
+              <Pressable
+                style={styles.modalBtnCancel}
+                onPress={() => setTagModal(false)}
+              >
                 <Text style={styles.modalBtnCancelText}>Cancel</Text>
               </Pressable>
               <Pressable style={styles.modalBtn} onPress={addTag}>
@@ -928,9 +1021,11 @@ export default function ProfileScreen() {
               style={styles.inputField}
             />
             <View style={styles.modalBtnRow}>
-              <Pressable 
-                style={styles.modalBtnDelete} 
-                onPress={() => editingTagIndex !== null && removeTag(editingTagIndex)}
+              <Pressable
+                style={styles.modalBtnDelete}
+                onPress={() =>
+                  editingTagIndex !== null && removeTag(editingTagIndex)
+                }
               >
                 <Text style={styles.modalBtnText}>Delete</Text>
               </Pressable>
@@ -957,7 +1052,10 @@ export default function ProfileScreen() {
               style={styles.inputField}
             />
             <View style={styles.modalBtnRow}>
-              <Pressable style={styles.modalBtnCancel} onPress={() => setLookingForModal(false)}>
+              <Pressable
+                style={styles.modalBtnCancel}
+                onPress={() => setLookingForModal(false)}
+              >
                 <Text style={styles.modalBtnCancelText}>Cancel</Text>
               </Pressable>
               <Pressable style={styles.modalBtn} onPress={addLookingFor}>
@@ -974,7 +1072,10 @@ export default function ProfileScreen() {
           <View style={styles.connectionsModalContent}>
             <View style={styles.connectionsHeader}>
               <Text style={styles.connectionsTitle}>Campus Connections</Text>
-              <Pressable onPress={() => setConnectionsModal(false)} style={styles.closeBtn}>
+              <Pressable
+                onPress={() => setConnectionsModal(false)}
+                style={styles.closeBtn}
+              >
                 <Text style={styles.closeBtnText}>✕</Text>
               </Pressable>
             </View>
@@ -983,89 +1084,121 @@ export default function ProfileScreen() {
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <View style={styles.connectionItem}>
-                  <Image source={{ uri: item.avatar }} style={styles.connectionAvatar} />
+                  <Image
+                    source={{ uri: item.avatar }}
+                    style={styles.connectionAvatar}
+                  />
                   <View style={styles.connectionInfo}>
                     <Text style={styles.connectionName}>{item.name}</Text>
                     <Text style={styles.connectionMajor}>{item.major}</Text>
                   </View>
                 </View>
               )}
-              ItemSeparatorComponent={() => <View style={styles.connectionSeparator} />}
+              ItemSeparatorComponent={() => (
+                <View style={styles.connectionSeparator} />
+              )}
             />
           </View>
         </View>
       </Modal>
 
-  {/* SETTINGS MODAL */}
-<Modal visible={settingsModal} transparent animationType="fade">
-  <View style={styles.modalCenter}>
-    <View style={styles.modalBox}>
-      <View style={styles.connectionsHeader}>
-        <Text style={styles.modalTitle}>Settings</Text>
-        <Pressable onPress={() => setSettingsModal(false)} style={styles.closeBtn}>
-          <Text style={styles.closeBtnText}>✕</Text>
-        </Pressable>
-      </View>
-
-      <View style={{ width: "100%" }}>
-        <Pressable style={styles.settingsRow} onPress={openNameEdit}>
-          <View>
-            <Text style={styles.settingsRowLabel}>Change display name</Text>
-            <Text style={styles.settingsRowValue}>{name ? name : "Not set"}</Text>
-          </View>
-        </Pressable>
-
-        <Pressable style={styles.settingsRow} onPress={openBioEdit}>
-          <View>
-            <Text style={styles.settingsRowLabel}>Change bio</Text>
-            <Text style={styles.settingsRowValue}>{bio ? (bio.length > 60 ? bio.slice(0, 57) + "..." : bio) : "Add a short bio"}</Text>
-          </View>
-        </Pressable>
-
-        {/* View Email (non-pressable) */}
-        <View style={styles.settingsRow}>
-          <View>
-            <Text style={styles.settingsRowLabel}>Email</Text>
-            <Text style={styles.settingsRowValue}>{email ?? "Not available"}</Text>
-          </View>
-        </View>
-
-        
-
-        {/* Reset Password */}
-        <Pressable style={styles.settingsRow} onPress={handleResetPassword}>
-          <View>
-            <Text style={[styles.settingsRowLabel, { color: "#e74c3c" }]}>Reset password</Text>
-          </View>
-        </Pressable>
-
-        {/* In Settings modal content, near Reset Password or at the bottom */}
-        <Pressable style={styles.modalBtn} onPress={saveProfile}>
-          <Text style={styles.modalBtnText}>Save changes</Text>
-        </Pressable>
-
-        <View style={{ height: 12 }} />
-      </View>
-
-      {/* SIGN OUT */}
-            <View style={styles.signOutSection}>
+      {/* SETTINGS MODAL */}
+      <Modal visible={settingsModal} transparent animationType="fade">
+        <View style={styles.modalCenter}>
+          <View style={styles.modalBox}>
+            <View style={styles.connectionsHeader}>
+              <Text style={styles.modalTitle}>Settings</Text>
               <Pressable
-                style={styles.signOutButton}
-                onPress={handleSignOut}
+                onPress={() => setSettingsModal(false)}
+                style={styles.closeBtn}
               >
-                <Text style={styles.signOutText}>Sign Out</Text>
+                <Text style={styles.closeBtnText}>✕</Text>
               </Pressable>
+            </View>
+
+            <View style={styles.settingsContent}>
+              <Pressable
+                style={styles.settingsRow}
+                onPress={openNameEdit}
+              >
+                <View>
+                  <Text style={styles.settingsRowLabel}>
+                    Change display name
+                  </Text>
+                  <Text style={styles.settingsRowValue}>
+                    {name ? name : "Not set"}
+                  </Text>
+                </View>
+              </Pressable>
+
+              <Pressable
+                style={styles.settingsRow}
+                onPress={openBioEdit}
+              >
+                <View>
+                  <Text style={styles.settingsRowLabel}>Change bio</Text>
+                  <Text style={styles.settingsRowValue}>
+                    {bio
+                      ? bio.length > 60
+                        ? bio.slice(0, 57) + "..."
+                        : bio
+                      : "Add a short bio"}
+                  </Text>
+                </View>
+              </Pressable>
+
+              {/* View Email (non-pressable) */}
+              <View style={styles.settingsRow}>
+                <View>
+                  <Text style={styles.settingsRowLabel}>Email</Text>
+                  <Text style={styles.settingsRowValue}>
+                    {email ?? "Not available"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Reset Password */}
+              <Pressable
+                style={styles.settingsRow}
+                onPress={handleResetPassword}
+              >
+                <View>
+                  <Text
+                    style={[
+                      styles.settingsRowLabel,
+                      { color: "#e74c3c" },
+                    ]}
+                  >
+                    Reset password
+                  </Text>
+                </View>
+              </Pressable>
+              {/* Bottom Buttons Row */}
+              <View style={styles.settingsBottomRow}>
+                <Pressable
+                  style={[styles.bottomButtonLeft, isSavingProfile && { opacity: 0.7 }]}
+                  onPress={saveProfile}
+                  disabled={isSavingProfile}
+                >
+                  <Text style={styles.bottomButtonText}>
+                    {isSavingProfile ? "Saving..." : "Save Changes"}
+                  </Text>
+                </Pressable>
+
+                <Pressable style={styles.bottomButtonRight} onPress={handleSignOut}>
+                  <Text style={styles.bottomButtonText}>Sign Out</Text>
+                </Pressable>
+              </View>
             </View>
           </View>
         </View>
       </Modal>
     </ScrollView>
-    )
+    </FadeInView>
+  );
 }
 
-
 /* ----- COMPONENTS ----- */
-
 
 const Stat = ({ number, label }: { number: string; label: string }) => (
   <View style={styles.statBlock}>
@@ -1124,6 +1257,22 @@ const styles = StyleSheet.create({
     zIndex: 10,
     padding: 8,
   },
+
+  saveButton: {
+  backgroundColor: "#a87bd6",
+  paddingVertical: 10,
+  borderRadius: 8,
+  alignItems: "center",
+  justifyContent: "center",
+  marginTop: 8,
+},
+
+saveButtonText: {
+  color: "#fff",
+  fontWeight: "600",
+  fontSize: 15,
+  fontFamily: "CherryBomb",
+},
 
   imageWrapper: {
     width: 150,
@@ -1191,9 +1340,13 @@ const styles = StyleSheet.create({
   settingsRow: {
     width: "100%",
     paddingVertical: 12,
-    paddingHorizontal: 6,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
+  },
+  settingsContent: {
+    width: "100%",
+    gap: 4, // subtle vertical spacing between rows
   },
   settingsRowLabel: {
     fontSize: 15,
@@ -1388,7 +1541,6 @@ const styles = StyleSheet.create({
   navItem: { alignItems: "center" },
   navIcon: { fontSize: 24 },
   navLabel: { fontSize: 10, textAlign: "center" },
-  
 
   /* MODALS */
   modalBackground: {
@@ -1410,10 +1562,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalBox: {
-    width: "80%",
+    width: "85%",       // instead of 80% if you want it a bit wider
     backgroundColor: "#fff",
     padding: 20,
-    borderRadius: 12,
+    borderRadius: 16,
     gap: 10,
   },
   modalTitle: {
@@ -1627,21 +1779,60 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
   },
-     signOutSection: {
-    marginTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    paddingTop: 12,
-  },
-  signOutButton: {
-    backgroundColor: "#e74c3c",
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
+// AFTER
+signOutSection: {
+  marginTop: 16,
+  borderTopWidth: 1,
+  borderTopColor: "#eee",
+  paddingTop: 12,
+  paddingHorizontal: 20,  // align with rows + header
+},
+
+signOutButton: {
+  width: "100%",          // full-width button
+  backgroundColor: "#e74c3c",
+  paddingVertical: 10,
+  borderRadius: 8,
+  alignItems: "center",
+  justifyContent: "center",
+},
   signOutText: {
     textAlign: "center",
     color: "#fff",
     fontWeight: "600",
     fontFamily: "CherryBomb",
   },
+
+  settingsBottomRow: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginTop: 20,
+  gap: 12,
+},
+
+bottomButtonLeft: {
+  flex: 1,
+  backgroundColor: "#a87bd6",
+  paddingVertical: 12,
+  borderRadius: 10,
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+bottomButtonRight: {
+  flex: 1,
+  backgroundColor: "#e74c3c",
+  paddingVertical: 12,
+  borderRadius: 10,
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+bottomButtonText: {
+  color: "#fff",
+  fontSize: 15,
+  fontWeight: "600",
+  fontFamily: "CherryBomb",
+},
 });
