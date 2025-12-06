@@ -39,6 +39,7 @@ export default function DMThreadScreen() {
   const [text, setText] = useState('');
   const [otherUserName, setOtherUserName] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
   const { theme } = useTheme();
   const styles = makeStyles(theme);
 
@@ -226,12 +227,11 @@ export default function DMThreadScreen() {
       />
 
       <KeyboardAvoidingView
-        style={styles.root}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={80}
+        style={styles.content}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
-
-        {/* Messages */}
+        {/* Messages area */}
         {loading ? (
           <View style={styles.emptyWrap}>
             <Text style={styles.emptySubtitle}>Loading messages…</Text>
@@ -249,6 +249,7 @@ export default function DMThreadScreen() {
             keyExtractor={(item) => item.id.toString()}
             contentContainerStyle={styles.listContent}
             renderItem={renderItem}
+            keyboardShouldPersistTaps="handled"
           />
         )}
 
@@ -256,7 +257,7 @@ export default function DMThreadScreen() {
         <View style={styles.inputBar}>
           <TextInput
             style={styles.input}
-            placeholder="Message."
+            placeholder="Message"
             placeholderTextColor={theme.textSecondary}
             value={text}
             onChangeText={setText}
