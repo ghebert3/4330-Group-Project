@@ -12,17 +12,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme';
+import type { Theme } from '../theme';
+import BackHeader from '../components/BackHeader';
 
 type ProfileRow = {
   id: string;
   email: string | null;
 };
 
-const BG = '#F7EEDB';
-const PURPLE = '#7E57C2';
-
 export default function DMNewChatScreen() {
   const navigation = useNavigation<any>();
+  const { theme } = useTheme();
+  const styles = makeStyles(theme);
 
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,83 +195,77 @@ export default function DMNewChatScreen() {
     );
   };
 
-  return (
-    <SafeAreaView style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>New message</Text>
-      </View>
+   return (
+    <View style={styles.root}>
+      <BackHeader
+        title="New message"
+        backgroundColor={theme.background}
+        textColor={theme.textPrimary}
+      />
 
       {loading ? (
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="small" color={PURPLE} />
+          <ActivityIndicator size="small" color={theme.accent} />
           <Text style={styles.loadingText}>Loading people…</Text>
         </View>
       ) : (
         <FlatList
           data={profiles}
-          keyExtractor={item => item.id}
+          keyExtractor={(item) => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: BG,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 8,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#3f2b64',
-  },
-  loadingWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 16,
-  },
-  loadingText: {
-    marginLeft: 10,
-    color: '#555',
-  },
-  listContent: {
-    paddingHorizontal: 10,
-    paddingBottom: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    marginVertical: 4,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#e0d2ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  avatarText: {
-    fontWeight: '700',
-    color: '#4a2a8a',
-  },
-  email: {
-    flex: 1,
-    fontSize: 15,
-    color: '#333',
-  },
-});
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    loadingWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      marginTop: 16,
+    },
+    loadingText: {
+      marginLeft: 10,
+      color: theme.textSecondary,
+    },
+    listContent: {
+      paddingHorizontal: 10,
+      paddingBottom: 16,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 10,
+      paddingVertical: 10,
+      marginVertical: 4,
+      borderRadius: 14,
+      backgroundColor: theme.card,
+    },
+    avatar: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: theme.chipBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 10,
+    },
+    avatarText: {
+      fontWeight: '700',
+      color: theme.accent,
+    },
+    email: {
+      flex: 1,
+      fontSize: 15,
+      color: theme.textPrimary,
+    },
+  });
+}
