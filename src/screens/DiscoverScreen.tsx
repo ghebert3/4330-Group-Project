@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, ScrollView, Image, ImageBackground, StyleSheet, Text, TouchableOpacity, Animated, Easing } from "react-native";
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/types';
+import { useNavigation } from '@react-navigation/native';
 import board from '../../assets/discover/Maskgroup.png';
 import x from '../../assets/discover/X(1).png';
 import profile from '../../assets/discover/Ellipse6(1).png';
@@ -18,7 +21,13 @@ import polaroid4 from '../../assets/discover/Group6.png';
 import picture2 from '../../assets/discover/Group7.png';
 import sticker3 from '../../assets/discover/pochita.png';
 
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, 'AppTabs'>;
+};
+
 export default function DiscoverScreen() {
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
     {/* Roles */}
     const roles = [
     {id: 1, tag: 'Flower'},
@@ -50,6 +59,14 @@ export default function DiscoverScreen() {
   return (
     <View 
         style={styles.container}>
+          <TouchableOpacity
+                style={{ position: 'absolute', top: 50, left: 10, zIndex: 999 }}
+                onPress={() => navigation.navigate('DiscoverEditor')}
+            >
+                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
+                    Open Editor
+                </Text>
+            </TouchableOpacity>
       <View 
         style={styles.bar}/>
       {/* Pin Board */}

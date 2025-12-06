@@ -5,6 +5,8 @@ export type RootStackParamList = {
   Restart: undefined;
   AppTabs: undefined;
   ChangePassword: undefined;
+  DiscoverEditor: undefined;
+  Discover: undefined;
 };
 
 export type AuthStackParamList = {

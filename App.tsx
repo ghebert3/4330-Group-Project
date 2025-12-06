@@ -5,7 +5,7 @@ import RootNavigator from './src/navigation/RootNavigator';
 import { supabase } from './src/lib/supabase';
 import { navigationRef } from './src/navigation/navigationRef';
 import React from "react";
-import  DiscoverScreen  from "./src/screens/DiscoverScreen";
+import DiscoverEditor  from "./src/screens/DiscoverEditor";
 
 export default function App() {
   const [fontsLoaded] = useFonts({

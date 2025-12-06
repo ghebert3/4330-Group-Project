@@ -10,7 +10,7 @@ import DiscoverScreen from '../screens/DiscoverScreen';
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 import WhirlIcon from '../../assets/icons/whirl.png';
-
+import DiscoverEditor from '../screens/DiscoverEditor';
 import type {
   RootStackParamList,
   AppTabParamList,
@@ -142,7 +142,7 @@ export default function RootNavigator() {
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="Restart" component={RestartScreen} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-
+        <Stack.Screen name="DiscoverEditor" component={DiscoverEditor} />
         <Stack.Screen name="AppTabs" component={AppTabs} />
       </Stack.Navigator>
     </NavigationContainer>
