@@ -20,7 +20,6 @@ import FadeInView from '../components/FadeInView';
 import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
-import { useTheme } from '../theme';
 
 const { width } = Dimensions.get('window');
 
@@ -380,8 +379,6 @@ export default function MeetupsScreen() {
   const [newCapacity, setNewCapacity] = useState('10');
   const [newLocation, setNewLocation] = useState('');
   const [newDescription, setNewDescription] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
-
 
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
@@ -464,78 +461,6 @@ export default function MeetupsScreen() {
   }
 
   const ItemSep = useMemo(() => <View style={{ height: 18 }} />, []);
-
-  const reloadMeetups = async () => {
-  try {
-    setRefreshing(true);
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      console.error('Error getting user in reloadMeetups:', userError);
-      Alert.alert('Not signed in', 'You must be logged in to refresh meetups.');
-      return;
-    }
-
-    setCurrentUserId(user.id);
-
-    const nowIso = new Date().toISOString();
-
-    const { data, error } = await supabase
-      .from('meetups')
-      .select(`
-        id,
-        host,
-        name,
-        description,
-        location,
-        max_capacity,
-        starts_at,
-        meetup_participants (
-          user_id,
-          profiles ( email )
-        )
-      `)
-      .gte('starts_at', nowIso)
-      .order('starts_at', { ascending: true });
-
-    if (error) {
-      console.error('Error reloading meetups:', error);
-      Alert.alert('Error', 'Could not refresh meetups. Please try again.');
-      return;
-    }
-
-    const mapped: Meetup[] =
-      (data ?? []).map((row: any) => {
-        const participants = row.meetup_participants ?? [];
-        return {
-          id: String(row.id),
-          title: row.name,
-          description: row.description,
-          location: row.location,
-          capacity: row.max_capacity,
-          currentCount: participants.length,
-          joined: participants.some((p: any) => p.user_id === user.id),
-          startsAt: row.starts_at,
-          host: row.host,
-          participantEmails: participants.map(
-            (p: any) => p.profiles?.email ?? ''
-          ),
-        };
-      }) ?? [];
-
-    setMeetups(mapped);
-  } catch (e) {
-    console.error('Unexpected error in reloadMeetups:', e);
-    Alert.alert('Error', 'Something went wrong. Please try again.');
-  } finally {
-    setRefreshing(false);
-  }
-};
-
 
   const handleCreatePress = () => {
     setNewTitle('');
@@ -900,8 +825,6 @@ export default function MeetupsScreen() {
               />
             </FadeInView>
           )}
-          refreshing={refreshing}       
-          onRefresh={reloadMeetups}     
           showsVerticalScrollIndicator={false}
         />
 
