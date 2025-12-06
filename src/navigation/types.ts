@@ -10,6 +10,8 @@ export type RootStackParamList = {
   EditProfile: undefined;
   DMThread: { conversationId: number };
   DMNewChat: undefined; 
+  DiscoverEditor: undefined;
+  Discover: undefined;
 };
 
 export type AuthStackParamList = {

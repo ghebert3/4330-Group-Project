@@ -12,6 +12,8 @@ import DiscoverScreen from '../screens/DiscoverScreen';
 import DMThreadScreen from '../screens/DMThreadScreen';
 import DMListScreen from '../screens/DMListScreen';
 import DMNewChatScreen from '../screens/DMNewChatScreen';
+import DiscoverEditor from '../screens/DiscoverEditor';
+
 
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
