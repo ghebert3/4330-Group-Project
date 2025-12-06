@@ -3,16 +3,16 @@ export type RootStackParamList = {
   Login: undefined;
   SignUp: undefined;
   Restart: undefined;
-  AppTabs: undefined;
   ChangePassword: undefined;
   Onboarding: undefined;
   ProfileOverview: undefined;
   EditProfile: undefined;
-  DMThread: { conversationId: number };
-  DMNewChat: undefined; 
+  AppTabs: undefined;
+  DMThread:  | undefined;
+  DMNewChat: undefined;
   DiscoverEditor: undefined;
-  Discover: undefined;
 };
+
 
 export type AuthStackParamList = {
   Login: undefined;
