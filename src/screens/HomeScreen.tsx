@@ -32,53 +32,6 @@ export default function HomeScreen() {
   const [momentsLoading, setMomentsLoading] = useState(false);
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setErrorMsg(null);
-      // Fallback: fetch posts first without relationship join
-      const { data: postData, error: postErr } = await supabase
-        .from("posts")
-        .select("id, author, image_url, caption, created_at")
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (postErr) {
-        setErrorMsg(postErr.message);
-        setLoading(false);
-        return;
-      }
-
-      let postsRaw = (postData as any[]) || [];
-      // Exclude current user's posts from home feed
-      if (currentUserId) {
-        postsRaw = postsRaw.filter(p => p.author !== currentUserId);
-      }
-      const authorIds = Array.from(new Set(postsRaw.map(p => p.author).filter(Boolean)));
-
-      let profilesById: Record<string, { id: string; display_name: string | null; avatar_url: string | null }> = {};
-      if (authorIds.length > 0) {
-        const { data: profData, error: profErr } = await supabase
-          .from("profiles")
-          .select("id, display_name, avatar_url")
-          .in("id", authorIds);
-        if (!profErr && profData) {
-          for (const prof of profData as any[]) {
-            profilesById[prof.id] = { id: prof.id, display_name: prof.display_name ?? null, avatar_url: prof.avatar_url ?? null };
-          }
-        }
-      }
-
-      const merged = postsRaw.map(p => ({
-        id: p.id,
-        image_url: p.image_url ?? null,
-        caption: p.caption ?? null,
-        created_at: p.created_at,
-        author: profilesById[p.author] ?? null,
-      }));
-
-      setPosts(merged as any);
-      setLoading(false);
-    };
     const loadMe = async () => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id;
@@ -105,10 +58,55 @@ export default function HomeScreen() {
       }
       setMomentsLoading(false);
     };
-    load();
     loadMe();
     loadMoments();
   }, []);
+
+  // Load posts after we know currentUserId so we can exclude self
+  useEffect(() => {
+    const loadPosts = async () => {
+      setLoading(true);
+      setErrorMsg(null);
+      let query = supabase
+        .from("posts")
+        .select("id, author, image_url, caption, created_at")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (currentUserId) {
+        query = query.neq("author", currentUserId);
+      }
+      const { data: postData, error: postErr } = await query as any;
+      if (postErr) {
+        setErrorMsg(postErr.message);
+        setLoading(false);
+        return;
+      }
+      const postsRaw = (postData as any[]) || [];
+      const authorIds = Array.from(new Set(postsRaw.map(p => p.author).filter(Boolean)));
+      let profilesById: Record<string, { id: string; display_name: string | null; avatar_url: string | null }> = {};
+      if (authorIds.length > 0) {
+        const { data: profData, error: profErr } = await supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url")
+          .in("id", authorIds);
+        if (!profErr && profData) {
+          for (const prof of profData as any[]) {
+            profilesById[prof.id] = { id: prof.id, display_name: prof.display_name ?? null, avatar_url: prof.avatar_url ?? null };
+          }
+        }
+      }
+      const merged = postsRaw.map(p => ({
+        id: p.id,
+        image_url: p.image_url ?? null,
+        caption: p.caption ?? null,
+        created_at: p.created_at,
+        author: profilesById[p.author] ?? null,
+      }));
+      setPosts(merged as any);
+      setLoading(false);
+    };
+    loadPosts();
+  }, [currentUserId]);
 
   async function handleAddMoment() {
     try {
@@ -206,11 +204,9 @@ export default function HomeScreen() {
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
               {moments.map(m => (
-                <View key={m.id} style={{ marginRight: 10 }}>
-                  <Pressable onPress={() => { setPhotoModalUri(m.image_url); setPhotoModalVisible(true); }}>
-                    <Image source={{ uri: m.image_url }} style={styles.momentImage} resizeMode="cover" />
-                  </Pressable>
-                </View>
+                <Pressable key={m.id} style={{ marginRight: 10 }} onPress={() => { setPhotoModalUri(m.image_url); setPhotoModalVisible(true); }}>
+                  <Image source={{ uri: m.image_url }} style={styles.momentImage} resizeMode="cover" />
+                </Pressable>
               ))}
             </ScrollView>
           )}
