@@ -8,7 +8,7 @@ import {
   ScrollView,
   Pressable,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import { supabase } from "../lib/supabase";
 import BackHeader from "../components/BackHeader";
@@ -16,30 +16,41 @@ import { useTheme, ThemeMode } from "../theme";
 
 export default function ProfileOverviewScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const { theme, themeMode, setThemeMode } = useTheme();
 
   const [name, setName] = useState<string>("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
 
-  // Load basic profile info for the overview
+  // Determine which user to show, then load profile info
   useEffect(() => {
-    async function loadProfile() {
+    const maybeParamUserId: string | undefined = route?.params?.userId;
+    async function resolveUserId() {
+      if (maybeParamUserId) {
+        setProfileUserId(maybeParamUserId);
+        return maybeParamUserId;
+      }
       const {
         data: { user },
         error: userError,
       } = await supabase.auth.getUser();
-
       if (userError || !user) {
-        console.log("ProfileOverview loadProfile user error", userError);
-        return;
+        console.log("ProfileOverview resolveUserId error", userError);
+        return null;
       }
+      setProfileUserId(user.id);
+      return user.id;
+    }
 
+    async function loadProfile() {
+      const uid = await resolveUserId();
+      if (!uid) return;
       const { data, error } = await supabase
         .from("profiles")
         .select("display_name, avatar_url")
-        .eq("id", user.id)
+        .eq("id", uid)
         .single();
-
       if (error) {
         console.error("Error loading profile", error);
         return;
@@ -49,7 +60,7 @@ export default function ProfileOverviewScreen() {
     }
 
     loadProfile();
-  }, []);
+  }, [route?.params?.userId]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -78,14 +89,13 @@ export default function ProfileOverviewScreen() {
 
       const file = result.assets[0];
 
+      // Only allow changing avatar when viewing your own profile
       const {
         data: { user },
         error: userError,
       } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        console.error("Error getting user for avatar upload", userError);
-        Alert.alert("Error", "Could not find current user.");
+      if (userError || !user || !profileUserId || user.id !== profileUserId) {
+        Alert.alert("Not allowed", "You can only edit your own avatar.");
         return;
       }
 

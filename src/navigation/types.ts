@@ -6,6 +6,7 @@ export type RootStackParamList = {
   ChangePassword: undefined;
   Onboarding: undefined;
   ProfileOverview: undefined;
+  UserProfile: { userId: string };
   EditProfile: undefined;
   AppTabs: undefined;
   DMThread:  | undefined;

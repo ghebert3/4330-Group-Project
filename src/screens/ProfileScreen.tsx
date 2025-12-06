@@ -1664,6 +1664,473 @@ const makeStyles = (theme: Theme) =>
     },
 
     settingsSheetContainer: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: theme.card, // dimmed backdrop
+  },
+
+  settingsSheet: {
+    width: "100%",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    alignSelf: "stretch",
+  },
+
+
+  settingsRowLabel: {
+    fontSize: 14,
+    color: theme.textPrimary,
+    fontWeight: "500",
+  },
+
+  settingsRowValue: {
+    fontSize: 13,
+    color: theme.textSecondary,
+    maxWidth: 190,
+  },
+  /* Small bubble edit modal */
+  smallBubble: {
+    width: "88%",
+    backgroundColor: theme.background,
+    borderRadius: 14,
+    padding: 16,
+    alignItems: "center",
+    gap: 10,
+  },
+  bubbleInput: {
+    width: "100%",
+    borderRadius: 10,
+    backgroundColor: theme.background,
+    padding: 10,
+    fontSize: 15,
+    fontFamily: "CherryBomb",
+  },
+  bubbleBtnRow: {
+    flexDirection: "row",
+    marginTop: 8,
+    gap: 12,
+  },
+
+  /* TAGS */
+  tagContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "center",
+    marginVertical: 20,
+  },
+  tag: {
+    backgroundColor: theme.chipBg,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  tagText: {
+    fontSize: 12,
+    fontFamily: "CherryBomb",
+    color: "#eee",
+  },
+  addTagButton: {
+    backgroundColor: theme.chipBg,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+
+  /* LOOKING FOR */
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    alignSelf: "flex-start",
+    marginBottom: 10,
+    fontFamily: "CherryBomb",
+    color: theme.textPrimary,
+  },
+  sectionBox: {
+    width: "100%",
+    backgroundColor: theme.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.border,
+    padding: 15,
+    marginBottom: 20,
+  },
+  lookingForContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    width: "100%",
+  },
+  lookingForItem: {
+    backgroundColor: theme.chipBg,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  lookingForText: {
+    color: theme.textPrimary,
+    fontFamily: "CherryBomb",
+  },
+  removeBtn: {
+    backgroundColor: theme.danger,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  removeBtnText: {
+    color: theme.textPrimary,
+    fontSize: 14,
+    fontWeight: "bold",
+    lineHeight: 18,
+    fontFamily: "CherryBomb",
+  },
+  addLookingForBtn: {
+    backgroundColor: theme.chipBg,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+  },
+  inputFake: {
+    backgroundColor: theme.chipBg,
+    width: "100%",
+    padding: 12,
+    borderRadius: 16,
+    marginBottom: 25,
+  },
+  inputText: {
+    color: theme.chipBg,
+    fontFamily: "CherryBomb",
+  },
+
+  /* STATS */
+  statsRow: {
+    flexDirection: "row",
+    width: "100%",
+    justifyContent: "space-between",
+  },
+  statBlock: {
+    flex: 1,
+    alignItems: "center",
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: "700",
+    fontFamily: "CherryBomb",
+    color: theme.textPrimary,
+  },
+  statLabel: {
+    fontSize: 12,
+    marginTop: 3,
+    textAlign: "center",
+    fontFamily: "CherryBomb",
+    color: theme.textPrimary,
+  },
+
+  /* PHOTOS */
+  photoRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    width: "100%",
+    justifyContent: "flex-start",
+    alignSelf: "center",
+    maxWidth: 336,
+    gap: 8,
+  },
+  smallImage: {
+    width: 105,
+    height: 105,
+    borderRadius: 14,
+    resizeMode: "cover",
+  },
+  addPhotoButton: {
+    marginTop: 15,
+    backgroundColor: theme.card,
+    padding: 10,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+  },
+  addPhotoText: {
+    fontSize: 14,
+    color: theme.textPrimary,
+    fontFamily: "CherryBomb",
+  },
+
+  /* NAV BAR */
+  navBar: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginTop: 40,
+    borderTopWidth: 1,
+    borderColor: theme.border,
+    paddingVertical: 10,
+  },
+  navItem: { alignItems: "center" },
+  navIcon: { fontSize: 24 },
+  navLabel: { fontSize: 10, textAlign: "center" },
+
+  /* MODALS */
+  modalBackground: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  largeImage: {
+    width: "100%",
+    height: 400,
+    resizeMode: "contain",
+  },
+
+  modalCenter: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalBox: {
+    width: "85%",       // instead of 80% if you want it a bit wider
+    backgroundColor: theme.chipBg,
+    padding: 20,
+    borderRadius: 16,
+    gap: 10,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    fontFamily: "CherryBomb",
+    color: theme.textPrimary,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: "#555",
+    marginTop: 5,
+    fontFamily: "CherryBomb",
+  },
+  inputField: {
+    backgroundColor: "#eee",
+    padding: 10,
+    borderRadius: 8,
+    width: "100%",
+    fontFamily: "CherryBomb",
+  },
+  modalBtnRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 5,
+  },
+  modalBtn: {
+    flex: 1,
+    backgroundColor: "#a87bd6",
+    padding: 10,
+    borderRadius: 8,
+  },
+  modalBtnCancel: {
+    flex: 1,
+    backgroundColor: "#ddd",
+    padding: 10,
+    borderRadius: 8,
+  },
+  modalBtnCancelText: {
+    textAlign: "center",
+    color: "#555",
+    fontWeight: "600",
+    fontFamily: "CherryBomb",
+  },
+  modalBtnDelete: {
+    flex: 1,
+    backgroundColor: "#e74c3c",
+    padding: 10,
+    borderRadius: 8,
+  },
+  modalIconDelete: {
+    backgroundColor: "#e74c3c",
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalIconSave: {
+    backgroundColor: "#a87bd6",
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 12,
+  },
+  modalBtnText: {
+    textAlign: "center",
+    color: "#fff",
+    fontWeight: "600",
+    fontFamily: "CherryBomb",
+  },
+  cancelText: {
+    textAlign: "center",
+    color: "#777",
+    marginTop: 5,
+    fontFamily: "CherryBomb",
+  },
+
+  /* CONNECTIONS MODAL */
+  connectionsModalContainer: {
+    flex: 1,
+    backgroundColor: "transparent",
+    justifyContent: "flex-end",
+  },
+  connectionsModalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 40,
+    maxHeight: "75%",
+  },
+  connectionsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  connectionsTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    fontFamily: "CherryBomb",
+  },
+  closeBtn: {
+    padding: 5,
+  },
+
+  searchBar: {
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#F3F3F6",
+  borderRadius: 10,
+  paddingHorizontal: 10,
+  paddingVertical: 6,
+  marginTop: 10,
+},
+
+searchInput: {
+  flex: 1,
+  marginLeft: 6,
+  fontSize: 14,
+  color: "#333",
+},
+  closeBtnText: {
+    fontSize: 20,
+    color: "#666",
+    fontFamily: "CherryBomb",
+  },
+  connectionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 15,
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  connectionAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  connectionInfo: {
+    flex: 1,
+  },
+  connectionName: {
+    fontSize: 16,
+    fontWeight: "600",
+    fontFamily: "CherryBomb",
+  },
+  connectionMajor: {
+    fontSize: 13,
+    color: "#777",
+    marginTop: 2,
+    fontFamily: "CherryBomb",
+  },
+  connectionSeparator: {
+    height: 1,
+    backgroundColor: "#eee",
+    marginHorizontal: 20,
+  },
+
+  /* PHOTO MODALS */
+  photoModalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  photoModalClose: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    padding: 10,
+  },
+  photoModalContent: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  imageWithCaption: {
+    width: "100%",
+    alignItems: "center",
+  },
+  captionBubble: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    maxWidth: "88%",
+    alignItems: "center",
+    marginTop: 12,
+    // shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  captionText: {
+    color: "#222",
+    fontSize: 16,
+    textAlign: "center",
+    lineHeight: 20,
+    fontFamily: "CherryBomb",
+  },
+  editPhotoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 20,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  editPhotoBtnText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
+    fontFamily: "CherryBomb",
+  },
+  previewImage: {
+    width: "100%",
+    height: 150,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
       flex: 1,
       justifyContent: "flex-end",
       backgroundColor: theme.card, 

@@ -24,6 +24,7 @@ import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import ProfileOverviewScreen from "../screens/ProfileOverviewScreen";
+import UserProfileScreen from "../screens/UserProfileScreen";
 import EditProfileScreen from '../screens/EditProfileScreen';
 import { ThemeProvider, useTheme } from '../theme';
 
@@ -38,6 +39,8 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
 const MeetupsStack = createNativeStackNavigator();
+const ProfileStack = createNativeStackNavigator();
+const HomeStack = createNativeStackNavigator();
 
 const LSU_PURPLE = '#461D7C';
 
@@ -113,12 +116,30 @@ function AppTabs() {
         tabBarInactiveTintColor: '#777',
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Home" component={HomeStackNavigator} />
       <Tab.Screen name="Messages" component={DMListScreen} />
       <Tab.Screen name="Discover" component={DiscoverScreen} />
       <Tab.Screen name="Meetups" component={MeetupsStackNavigator} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Profile" component={ProfileStackNavigator} />
     </Tab.Navigator>
+  );
+}
+
+function ProfileStackNavigator() {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+      <ProfileStack.Screen name="UserProfile" component={UserProfileScreen} />
+    </ProfileStack.Navigator>
+  );
+}
+
+function HomeStackNavigator() {
+  return (
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="HomeMain" component={HomeScreen} />
+      <HomeStack.Screen name="UserProfile" component={UserProfileScreen} />
+    </HomeStack.Navigator>
   );
 }
 
@@ -137,6 +158,7 @@ export default function RootNavigator() {
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
           <Stack.Screen name="ProfileOverview" component={ProfileOverviewScreen} />
+          <Stack.Screen name="UserProfile" component={UserProfileScreen} />
           <Stack.Screen
             name="EditProfile"
             component={EditProfileScreen}
