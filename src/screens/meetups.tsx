@@ -20,32 +20,19 @@ import FadeInView from '../components/FadeInView';
 import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
-import { useTheme, Theme } from '../theme';
-import AppText from '../components/AppText';
+import { useTheme } from '../theme';
 
 const { width } = Dimensions.get('window');
 
-type Colors = {
-  bg: string;
-  purpleDark: string;
-  purple: string;
-  yellow: string;
-  yellowShadow: string;
-  cloud: string;
-  cloudShadowPlate: string;
+const COLORS = {
+  bg: '#F7EEDB',
+  purpleDark: '#4C2197',
+  purple: '#7E57C2',
+  yellow: '#ffc12fff',
+  yellowShadow: '#D8B45E',
+  cloud: '#F2A51A',
+  cloudShadowPlate: '#D9C6FF',
 };
-
-function makeColors(theme: Theme): Colors {
-  return {
-    bg: theme.background,
-    purpleDark: theme.accent,
-    purple: theme.accent,
-    yellow: theme.accent,
-    yellowShadow: theme.border,
-    cloud: theme.cardLite,
-    cloudShadowPlate: theme.border,
-  };
-}
 
 type Meetup = {
   id: string;
@@ -103,6 +90,246 @@ const INITIAL_MEETUPS: Meetup[] = [
   },
 ];
 
+function TopDecor() {
+  return (
+    <View style={stylesHeader.wrap}>
+      <Text style={stylesHeader.title}>MEETUPS</Text>
+
+      <LinearGradient
+        colors={[COLORS.purpleDark, COLORS.purple, 'rgba(255, 255, 255, 0.85)']}
+        locations={[0, 0.6, 1]}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={stylesHeader.moon}
+      />
+
+      <PuffyHeaderCloud style={{ right: 80, top: 64 }} />
+    </View>
+  );
+}
+
+function PuffyHeaderCloud({ style }: { style?: object }) {
+  return (
+    <View style={[stylesHeaderCloud.wrap, style]}>
+      <View style={stylesHeaderCloud.shadow} />
+      <View style={[stylesHeaderCloud.bubble, { width: 44, height: 44, left: 0, top: -6 }]} />
+      <View style={[stylesHeaderCloud.bubble, { width: 64, height: 64, left: 24, top: -18 }]} />
+      <View style={[stylesHeaderCloud.bubble, { width: 48, height: 48, left: 78, top: -8 }]} />
+      <View style={[stylesHeaderCloud.bubble, { width: 38, height: 38, left: 114, top: 0 }]} />
+      <View style={stylesHeaderCloud.base} />
+    </View>
+  );
+}
+
+function CreateCloudButton({ onPress }: { onPress: () => void }) {
+  const cardWidth = Math.min(width * 0.7, 260);
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={onPress}
+      style={[stylesCloud.wrap, { width: cardWidth, alignSelf: 'center', marginBottom: 26 }]}
+    >
+      <View
+        style={{
+          position: 'absolute',
+          bottom: -6,
+          left: 12,
+          width: '90%',
+          height: 22,
+          backgroundColor: COLORS.cloudShadowPlate,
+          borderRadius: 25,
+          opacity: 1,
+          zIndex: 0,
+        }}
+      />
+
+      <View
+        style={{
+          width: '100%',
+          height: 67,
+          backgroundColor: COLORS.cloud,
+          borderRadius: 36,
+          borderBottomLeftRadius: 40,
+          borderBottomRightRadius: 30,
+          shadowColor: '#000',
+          shadowOpacity: 0.05,
+          shadowRadius: 3,
+          shadowOffset: { width: 0, height: 2 },
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 3,
+        }}
+      >
+        <Text style={stylesCloud.createText}> Create Meetup</Text>
+      </View>
+
+      <View
+        style={{
+          position: 'absolute',
+          top: -30,
+          width: '45%',
+          height: 55,
+          alignSelf: 'center',
+          backgroundColor: COLORS.cloud,
+          borderRadius: 60,
+          zIndex: 2,
+        }}
+      />
+
+      <View
+        style={{
+          position: 'absolute',
+          top: -18,
+          left: 20,
+          width: '28%',
+          height: 45,
+          backgroundColor: COLORS.cloud,
+          borderRadius: 50,
+          zIndex: 2,
+        }}
+      />
+
+      <View
+        style={{
+          position: 'absolute',
+          top: -18,
+          right: 20,
+          width: '28%',
+          height: 45,
+          backgroundColor: COLORS.cloud,
+          borderRadius: 50,
+          zIndex: 2,
+        }}
+      />
+    </TouchableOpacity>
+  );
+}
+
+function CloudItem({
+  meetup,
+  alignRight = false,
+  idx = 0,
+  onPress,
+}: {
+  meetup: Meetup;
+  alignRight?: boolean;
+  idx?: number;
+  onPress: () => void;
+}) {
+  const cardWidth = Math.min(width * 0.55, 200);
+  const v = idx % 3;
+
+  let baseH = 58;
+  let shadow = { bottom: -4, left: 14.8, widthPct: 0.92, height: 18, opacity: 1 };
+  let center = { top: -26, wPct: 0.48, h: 70, radius: 90 };
+  let left = { top: -12, left: 12, wPct: 0.28, h: 48, radius: 50 };
+  let right = { top: -10, right: 12, wPct: 0.28, h: 46, radius: 50 };
+
+  if (v === 1) {
+    baseH = 50;
+    shadow = { bottom: -4.5, left: 8, widthPct: 0.95, height: 19, opacity: 0.9 };
+    center = { top: -24, wPct: 0.6, h: 60, radius: 80 };
+    left = { top: -10, left: 6, wPct: 0.3, h: 42, radius: 42 };
+    right = { top: -9, right: 6, wPct: 0.3, h: 40, radius: 40 };
+  } else if (v === 2) {
+    baseH = 42;
+    shadow = { bottom: -4, left: 15, widthPct: 0.9, height: 14, opacity: 0.8 };
+    center = { top: -22, wPct: 0.42, h: 48, radius: 70 };
+    left = { top: -10, left: 12, wPct: 0.26, h: 36, radius: 40 };
+    right = { top: -10, right: 12, wPct: 0.26, h: 36, radius: 40 };
+  }
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
+      style={[
+        stylesCloud.wrap,
+        { width: cardWidth, alignSelf: alignRight ? 'flex-end' : 'flex-start' },
+      ]}
+    >
+      <View
+        style={{
+          position: 'absolute',
+          bottom: shadow.bottom,
+          left: shadow.left,
+          width: `${shadow.widthPct * 100}%`,
+          height: shadow.height,
+          backgroundColor: COLORS.cloudShadowPlate,
+          borderRadius: 30,
+          opacity: shadow.opacity,
+          zIndex: 0,
+        }}
+      />
+
+      <View
+        style={{
+          width: '100%',
+          height: baseH,
+          backgroundColor: COLORS.cloud,
+          borderRadius: 35,
+          borderBottomLeftRadius: 28,
+          borderBottomRightRadius: 28,
+          shadowColor: '#000',
+          shadowOpacity: 0.05,
+          shadowRadius: 3,
+          shadowOffset: { width: 0, height: 2 },
+          zIndex: 2,
+        }}
+      />
+
+      <View
+        style={{
+          position: 'absolute',
+          top: center.top,
+          width: `${center.wPct * 100}%`,
+          height: center.h,
+          backgroundColor: COLORS.cloud,
+          borderRadius: center.radius,
+          alignSelf: 'center',
+          zIndex: 3,
+        }}
+      />
+
+      <View
+        style={{
+          position: 'absolute',
+          top: left.top,
+          left: left.left,
+          width: `${left.wPct * 100}%`,
+          height: left.h,
+          backgroundColor: COLORS.cloud,
+          borderRadius: left.radius,
+          zIndex: 3,
+        }}
+      />
+
+      <View
+        style={{
+          position: 'absolute',
+          top: right.top,
+          right: right.right,
+          width: `${right.wPct * 100}%`,
+          height: right.h,
+          backgroundColor: COLORS.cloud,
+          borderRadius: right.radius,
+          zIndex: 3,
+        }}
+      />
+
+      <View style={stylesCloud.labelWrap}>
+        <Text style={stylesCloud.labelTitle} numberOfLines={1}>
+          {meetup.title}
+        </Text>
+        <Text style={stylesCloud.labelCapacity}>
+          {meetup.currentCount}/{meetup.capacity}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function convertTo24h(timeStr: string): string | null {
   const t = timeStr.trim().toUpperCase();
 
@@ -138,358 +365,61 @@ function isValidDateYMD(dateStr: string): boolean {
 }
 
 export default function MeetupsScreen() {
-  // 1) Get current theme (light / dark) from ThemeProvider
-  const { theme } = useTheme();
+  const route = useRoute<any>();
+  const routeParams = (route.params ?? {}) as {
+    preloadedMeetups?: Meetup[];
+    currentUserId?: string;
+  };
 
-    // ---------- Themed header + cloud components (now INSIDE the screen) ----------
-
-  function TopDecor() {
-    return (
-      <View style={stylesHeader.wrap}>
-        <AppText style={stylesHeader.title}>MEETUPS</AppText>
-
-        <LinearGradient
-          colors={[COLORS.purpleDark, COLORS.purple, 'rgba(255, 255, 255, 0.85)']}
-          locations={[0, 0.6, 1]}
-          start={{ x: 0.2, y: 0 }}
-          end={{ x: 0.8, y: 1 }}
-          style={stylesHeader.moon}
-        />
-
-        <PuffyHeaderCloud style={{ right: 80, top: 64 }} />
-      </View>
-    );
-  }
-
-  function PuffyHeaderCloud({ style }: { style?: object }) {
-    return (
-      <View style={[stylesHeaderCloud.wrap, style]}>
-        <View style={stylesHeaderCloud.shadow} />
-        <View style={[stylesHeaderCloud.bubble, { width: 44, height: 44, left: 0, top: -6 }]} />
-        <View style={[stylesHeaderCloud.bubble, { width: 64, height: 64, left: 24, top: -18 }]} />
-        <View style={[stylesHeaderCloud.bubble, { width: 48, height: 48, left: 78, top: -8 }]} />
-        <View style={[stylesHeaderCloud.bubble, { width: 38, height: 38, left: 114, top: 0 }]} />
-        <View style={stylesHeaderCloud.base} />
-      </View>
-    );
-  }
-
-  function CreateCloudButton({ onPress }: { onPress: () => void }) {
-  const cardWidth = Math.min(width * 0.7, 260);
-
-  return (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={onPress}
-      style={[
-        stylesCloud.wrap,
-        {
-          width: cardWidth,
-          alignSelf: 'center',
-          marginTop: 18,   // ⬅ pushes the whole cloud down so it’s not cut off
-          marginBottom: 54,
-        },
-      ]}
-    >
-      {/* Soft centered shadow "plate" */}
-      <View
-        style={{
-          position: 'absolute',
-          bottom: -2,
-          left: "50%",
-          transform: [{ translateX: -((cardWidth * 0.85) / 2) }],
-          width: cardWidth * 0.87,
-          height: 16,
-          backgroundColor: "#000",
-          borderRadius: 100,
-          shadowColor: "#000",
-          shadowOpacity: 10,
-          shadowRadius: 5,
-          shadowOffset: { width: 0, height: 4 },
-          opacity: 0.24,
-          zIndex: 0,
-        }}
-      />
-
-      {/* Main pill body */}
-      <View
-        style={{
-          width: '100%',
-          height: 70,
-          backgroundColor: COLORS.cloud,
-          borderRadius: 36,
-          borderBottomLeftRadius: 40,
-          borderBottomRightRadius: 30,
-          shadowColor: '#000',
-          shadowRadius: 4,
-          shadowOffset: { width: 0, height: 3 },
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 3,
-        }}
-      >
-        <AppText style={stylesCloud.createText}>Create Meetup</AppText>
-      </View>
-
-      {/* Top bubbles – pulled down slightly so they stay fully on-screen */}
-      <View
-        style={{
-          position: 'absolute',
-          top: -30,
-          width: '48%',
-          height: 52,
-          alignSelf: 'center',
-          backgroundColor: COLORS.cloud,
-          borderRadius: 60,
-          zIndex: 2,
-        }}
-      />
-
-      <View
-        style={{
-          position: 'absolute',
-          top: -16,
-          left: 20,
-          width: '30%',
-          height: 44,
-          backgroundColor: COLORS.cloud,
-          borderRadius: 50,
-          zIndex: 2,
-        }}
-      />
-
-      <View
-        style={{
-          position: 'absolute',
-          top: -16,
-          right: 20,
-          width: '30%',
-          height: 44,
-          backgroundColor: COLORS.cloud,
-          borderRadius: 50,
-          zIndex: 2,
-        }}
-      />
-    </TouchableOpacity>
+  const [meetups, setMeetups] = useState<Meetup[]>(
+    routeParams.preloadedMeetups ?? INITIAL_MEETUPS
   );
-}
 
-  function CloudItem({
-  meetup,
-  alignRight = false,
-  idx = 0,
-  onPress,
-}: {
-  meetup: Meetup;
-  alignRight?: boolean;
-  idx?: number;
-  onPress: () => void;
-}) {
-  const cardWidth = Math.min(width * 0.55, 200);
-
-  // 4 subtle shape variants so clouds don't all look the same
-  const v = idx % 4;
-
-  let baseH = 58;
-  let center = { top: -24, wPct: 0.5, h: 60, radius: 90 };
-  let left = { top: -10, wPct: 0.32, h: 44, radius: 50, offsetX: 10 };
-  let right = { top: -10, wPct: 0.32, h: 44, radius: 50, offsetX: 10 };
-
-  if (v === 1) {
-    baseH = 54;
-    center = { top: -20, wPct: 0.6, h: 56, radius: 82 };
-    left = { top: -8, wPct: 0.30, h: 40, radius: 46, offsetX: 8 };
-    right = { top: -6, wPct: 0.34, h: 42, radius: 48, offsetX: 12 };
-  } else if (v === 2) {
-    baseH = 50;
-    center = { top: -22, wPct: 0.46, h: 52, radius: 78 };
-    left = { top: -6, wPct: 0.28, h: 38, radius: 42, offsetX: 12 };
-    right = { top: -10, wPct: 0.30, h: 40, radius: 44, offsetX: 8 };
-  } else if (v === 3) {
-    baseH = 62;
-    center = { top: -26, wPct: 0.55, h: 64, radius: 94 };
-    left = { top: -12, wPct: 0.34, h: 46, radius: 52, offsetX: 9 };
-    right = { top: -8, wPct: 0.30, h: 42, radius: 48, offsetX: 13 };
-  }
-
-  // tiny jitter so they don't feel copy-pasted
-  const jitterY = idx % 2 === 0 ? 1 : -1;
-
-  return (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={onPress}
-      style={[
-        stylesCloud.wrap,
-        {
-          width: cardWidth,
-          alignSelf: alignRight ? 'flex-end' : 'flex-start',
-        },
-      ]}
-    >
-      {/* Centered oval shadow */}
-      <View
-        style={{
-          position: "absolute",
-          bottom: 30,
-          left: "50%",
-          transform: [{ translateX: -((cardWidth * 0.8) / 2) }],
-          width: cardWidth * 0.85,
-          height: 16,
-          backgroundColor: "#000",
-          opacity: 0.12,
-          borderRadius: 100,
-          zIndex: 0,
-        }}
-      />
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newCapacity, setNewCapacity] = useState('10');
+  const [newLocation, setNewLocation] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
 
-      {/* Base cloud body */}
-      <View
-        style={{
-          width: '100%',
-          height: baseH,
-          backgroundColor: COLORS.cloud,
-          borderRadius: 35,
-          borderBottomLeftRadius: 28,
-          borderBottomRightRadius: 28,
-          shadowColor: '#000',
-          shadowOpacity: 0.35,
-          shadowRadius: 6,
-          shadowOffset: { width: 0, height: 4 },
-          zIndex: 2,
-        }}
-      />
+  const [newDate, setNewDate] = useState('');
+  const [newTime, setNewTime] = useState('');
+  const [newEndTime, setNewEndTime] = useState('');
 
-      {/* Center bubble */}
-      <View
-        style={{
-          position: 'absolute',
-          top: center.top + jitterY,
-          width: `${center.wPct * 100}%`,
-          height: center.h,
-          backgroundColor: COLORS.cloud,
-          borderRadius: center.radius,
-          alignSelf: 'center',
-          zIndex: 3,
-        }}
-      />
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const isIOS = Platform.OS === 'ios';
 
-      {/* Left bubble */}
-      <View
-        style={{
-          position: 'absolute',
-          top: left.top - jitterY,
-          left: left.offsetX,
-          width: `${left.wPct * 100}%`,
-          height: left.h,
-          backgroundColor: COLORS.cloud,
-          borderRadius: left.radius,
-          zIndex: 3,
-        }}
-      />
 
-      {/* Right bubble */}
-      <View
-        style={{
-          position: 'absolute',
-          top: right.top + jitterY,
-          right: right.offsetX,
-          width: `${right.wPct * 100}%`,
-          height: right.h,
-          backgroundColor: COLORS.cloud,
-          borderRadius: right.radius,
-          zIndex: 3,
-        }}
-      />
-
-      {/* Label content */}
-      <View style={stylesCloud.labelWrap}>
-        <Text style={stylesCloud.labelTitle} numberOfLines={1}>
-          {meetup.title}
-        </Text>
-        <Text style={stylesCloud.labelCapacity}>
-          {meetup.currentCount}/{meetup.capacity}
-        </Text>
-      </View>
-    </TouchableOpacity>
+  const [currentUserId, setCurrentUserId] = useState<string | null>(
+    routeParams.currentUserId ?? null
   );
-}
 
-  // 2) Derive your color palette for this screen from the theme
-  const COLORS = useMemo(() => makeColors(theme), [theme]);
+  const [participants, setParticipants] = useState<{ id: string; email: string }[]>([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
 
-  // 3) Build theme-aware styles using the factories you pasted earlier
-  const styles = useMemo(() => createStyles(COLORS, theme), [COLORS, theme]);
-    const stylesHeader = useMemo(
-      () => createHeaderStyles(COLORS, theme),
-      [COLORS, theme]
-    );
-    const stylesHeaderCloud = useMemo(
-      () => createHeaderCloudStyles(COLORS, theme),
-      [COLORS, theme]
-    );
-    const stylesCloud = useMemo(
-      () => createCloudStyles(COLORS, theme),
-      [COLORS, theme]
-    );
-
-    // 4) Your existing code continues from here ↓
-    const route = useRoute<any>();
-    const routeParams = (route.params ?? {}) as {
-      preloadedMeetups?: Meetup[];
-      currentUserId?: string;
-    };
-
-    const [meetups, setMeetups] = useState<Meetup[]>(
-      routeParams.preloadedMeetups ?? INITIAL_MEETUPS
-    );
-
-    const [createOpen, setCreateOpen] = useState(false);
-    const [newTitle, setNewTitle] = useState('');
-    const [newCapacity, setNewCapacity] = useState('10');
-    const [newLocation, setNewLocation] = useState('');
-    const [newDescription, setNewDescription] = useState('');
-    const [refreshing, setRefreshing] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedMeetup, setSelectedMeetup] = useState<Meetup | null>(null);
+  const [hostEmail, setHostEmail] = useState<string | null>(null);
 
 
-    const [newDate, setNewDate] = useState('');
-    const [newTime, setNewTime] = useState('');
-    const [newEndTime, setNewEndTime] = useState('');
+  //  REPORTING STATE 
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reportMeetupId, setReportMeetupId] = useState<string | null>(null);
+  const [reportMeetupTitle, setReportMeetupTitle] = useState<string>('');
+  const [reportReason, setReportReason] = useState<
+    'safety' | 'harassment' | 'spam' | 'inappropriate' | 'other'
+  >('safety');
+  const [reportDetails, setReportDetails] = useState<string>('');
 
-    const [showDatePicker, setShowDatePicker] = useState(false);
-    const [showTimePicker, setShowTimePicker] = useState(false);
-    const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-    const isIOS = Platform.OS === 'ios';
-
-
-    const [currentUserId, setCurrentUserId] = useState<string | null>(
-      routeParams.currentUserId ?? null
-    );
-
-    const [participants, setParticipants] = useState<{ id: string; email: string }[]>([]);
-    const [loadingParticipants, setLoadingParticipants] = useState(false);
-
-    const [detailsOpen, setDetailsOpen] = useState(false);
-    const [selectedMeetup, setSelectedMeetup] = useState<Meetup | null>(null);
-    const [hostEmail, setHostEmail] = useState<string | null>(null);
-
-
-    //  REPORTING STATE 
-    const [reportModalVisible, setReportModalVisible] = useState(false);
-    const [reportMeetupId, setReportMeetupId] = useState<string | null>(null);
-    const [reportMeetupTitle, setReportMeetupTitle] = useState<string>('');
-    const [reportReason, setReportReason] = useState<
-      'safety' | 'harassment' | 'spam' | 'inappropriate' | 'other'
-    >('safety');
-    const [reportDetails, setReportDetails] = useState<string>('');
-
-    function openReportModalForMeetup(meetup: Meetup) {
-      setReportMeetupId(meetup.id);
-      setReportMeetupTitle(meetup.title);
-      setReportReason('safety');
-      setReportDetails('');
-      setReportModalVisible(true);
+  function openReportModalForMeetup(meetup: Meetup) {
+    setReportMeetupId(meetup.id);
+    setReportMeetupTitle(meetup.title);
+    setReportReason('safety');
+    setReportDetails('');
+    setReportModalVisible(true);
   }
 
   async function handleSubmitReport() {
@@ -958,7 +888,7 @@ export default function MeetupsScreen() {
           contentContainerStyle={styles.listContent}
           data={meetups}
           keyExtractor={m => m.id}
-          ItemSeparatorComponent={() => <View style={{ height: 18 }} />}
+          ItemSeparatorComponent={() => ItemSep}
           ListHeaderComponent={<CreateCloudButton onPress={handleCreatePress} />}
           renderItem={({ item, index }) => (
             <FadeInView delay={150 + index * 80}>
@@ -970,8 +900,8 @@ export default function MeetupsScreen() {
               />
             </FadeInView>
           )}
-          refreshing={refreshing}
-          onRefresh={reloadMeetups}
+          refreshing={refreshing}       
+          onRefresh={reloadMeetups}     
           showsVerticalScrollIndicator={false}
         />
 
@@ -980,6 +910,7 @@ export default function MeetupsScreen() {
           style={styles.footer}
           resizeMode="stretch"
         />
+
         {/* Create Meetup Modal */}
         <Modal
           visible={createOpen}
@@ -1103,17 +1034,17 @@ export default function MeetupsScreen() {
                   style={[styles.modalButton, styles.modalCancel]}
                   onPress={() => setCreateOpen(false)}
                 >
-                  <Text style={[styles.modalButtonText, styles.modalCancelText]}>Cancel</Text>
+                  <Text style={styles.modalButtonText}>Cancel</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.modalCreate]}
+                  style={[styles.modalButton, styles.modalConfirm]}
                   onPress={handleSubmitCreate}
                 >
-                  <Text style={[styles.modalButtonText, styles.modalPrimaryText]}>Create</Text>
+                  <Text style={styles.modalButtonText}>Create</Text>
                 </TouchableOpacity>
+              </View>
             </View>
-          </View>
           </View>
         </Modal>
 
@@ -1205,22 +1136,22 @@ export default function MeetupsScreen() {
                   </TouchableOpacity>
 
                   <View style={styles.modalButtonsRow}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.modalCancel]}
-                    onPress={() => setDetailsOpen(false)}
-                  >
-                    <Text style={[styles.modalButtonText, styles.modalCancelText]}>Close</Text>
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.modalCancel]}
+                      onPress={() => setDetailsOpen(false)}
+                    >
+                      <Text style={styles.modalButtonText}>Close</Text>
+                    </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.modalCreate]}
-                    onPress={handleJoinFromDetails}
-                  >
-                    <Text style={[styles.modalButtonText, styles.modalPrimaryText]}>
-                      {selectedMeetup.joined ? 'Leave' : 'Join'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.modalCreate]}
+                      onPress={handleJoinFromDetails}
+                    >
+                      <Text style={styles.modalButtonText}>
+                        {selectedMeetup.joined ? 'Leave' : 'Join'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </>
               )}
             </View>
@@ -1302,385 +1233,351 @@ export default function MeetupsScreen() {
   );
 }
 
-// ------------------------------
-// THEME–AWARE STYLE SHEETS
-// ------------------------------
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: COLORS.bg },
+  listContent: { paddingHorizontal: 35, paddingBottom: 100, paddingTop: 25 },
 
-// ------------------------------
-// THEME–AWARE STYLE SHEETS
-// ------------------------------
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: 120,
+    zIndex: 5,
+    pointerEvents: 'none',
+  },
 
-const createStyles = (COLORS: any, theme: any) =>
-  StyleSheet.create({
-    root: {
-      flex: 1,
-      backgroundColor: COLORS.bg,
-    },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
-    // FlatList content
-    listContent: {
-      paddingHorizontal: 20,
-      paddingTop: 16,
-      paddingBottom: 40,
-    },
+  modalCard: {
+    width: '84%',
+    backgroundColor: '#FFF7E8',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 24,
+    marginBottom: 10,
+    color: COLORS.purpleDark,
+    fontFamily: 'CherryBombOne',
+  },
+  modalLabel: {
+    fontSize: 14,
+    marginTop: 8,
+    marginBottom: 4,
+    color: '#444',
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#E0C9A8',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: 'white',
+    fontSize: 14,
+  },
+  modalDescription: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#4a3b3b',
+    lineHeight: 20,
+  },
+  detailText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 6,
+  },
 
-    scrollArea: {
-      paddingHorizontal: 22,
-      paddingTop: 12,
-      paddingBottom: 150,
-    },
+  modalButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 16,
+  },
+  modalButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    marginLeft: 8,
+  },
+  modalCancel: {
+    backgroundColor: '#E0D0C0',
+  },
+  modalConfirm: {
+    backgroundColor: COLORS.purple,
+  },
+  modalCreate: {
+    backgroundColor: COLORS.purple,
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
 
-    sectionTitle: {
-      fontSize: 22,
-      fontWeight: '700',
-      color: theme.textPrimary,
-      marginBottom: 10,
-    },
+  // ----- REPORTING STYLES -----
+  reportLink: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+  },
+  reportLinkText: {
+    fontSize: 13,
+    color: '#C62828',
+    textDecorationLine: 'underline',
+  },
 
-    emptyWrap: {
-      alignItems: 'center',
-      marginTop: 40,
-    },
-    emptyTitle: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: theme.textPrimary,
-    },
-    emptySubtitle: {
-      fontSize: 14,
-      color: theme.textSecondary,
-      marginTop: 4,
-    },
+  reportReasonRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  reportReasonChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E0C9A8',
+    backgroundColor: '#FFF',
+  },
+  reportReasonChipActive: {
+    backgroundColor: COLORS.purple,
+    borderColor: COLORS.purple,
+  },
+  reportReasonText: {
+    fontSize: 12,
+    color: '#555',
+  },
+  reportReasonTextActive: {
+    color: '#fff',
+  },
+  reportInput: {
+    borderWidth: 1,
+    borderColor: '#E0C9A8',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: 'white',
+    fontSize: 14,
+    minHeight: 80,
+    maxHeight: 140,
+    textAlignVertical: 'top',
+  },
+  reportButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 16,
+  },
+  reportCancelButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    marginRight: 8,
+    backgroundColor: '#E0D0C0',
+  },
+  reportCancelText: {
+    color: '#333',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  reportSubmitButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: COLORS.purpleDark,
+  },
+  reportSubmitText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+});
 
-    footer: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
-      width: '100%',
-      height: 80,
-    },
+const stylesHeader = StyleSheet.create({
+  wrap: {
+    paddingTop: 8,
+    paddingHorizontal: 18,
+    paddingBottom: 8,
+    minHeight: 120,
+  },
+  title: {
+    fontSize: 36,
+    letterSpacing: 2,
+    right: 6,
+    color: COLORS.purpleDark,
+    fontFamily: 'FodaDisplay',
+  },
+  moon: {
+    position: 'absolute',
+    right: 24,
+    top: 10,
+    width: 98,
+    height: 98,
+    borderRadius: 49,
+    opacity: 1,
+  },
+});
 
-    // ---------- Modal (shared) -----------
-    modalBackdrop: {
-      flex: 1,
-      backgroundColor: '#0008',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: '#0008',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    modalCard: {
-      width: '88%',
-      backgroundColor: theme.card,
-      borderRadius: 16,
-      padding: 20,
-      shadowColor: '#000',
-      shadowOpacity: 0.2,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 3 },
-      elevation: 6,
-    },
-    modalTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      color: COLORS.purpleDark,
-      marginBottom: 12,
-    },
-    modalLabel: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: theme.textPrimary,
-      marginTop: 12,
-    },
-    modalInput: {
-      backgroundColor: theme.card,
-      borderWidth: 1,
-      borderColor: theme.border,
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      marginTop: 6,
-      color: theme.textPrimary,
-    },
+const stylesHeaderCloud = StyleSheet.create({
+  wrap: {
+    position: 'absolute',
+    width: 150,
+    height: 35,
+    zIndex: 2,
+  },
+  shadow: {
+    position: 'absolute',
+    left: 18,
+    right: 18,
+    bottom: 4,
+    height: 10,
+    borderRadius: 10,
+    backgroundColor: COLORS.yellowShadow,
+    opacity: 0.35,
+  },
+  bubble: {
+    position: 'absolute',
+    backgroundColor: COLORS.yellow,
+    borderRadius: 999,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  base: {
+    position: 'absolute',
+    left: 6,
+    right: 6,
+    bottom: 6,
+    height: 30,
+    backgroundColor: COLORS.yellow,
+    borderRadius: 20,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+  },
+});
 
-    // row with Cancel / Confirm / Join buttons
-    modalButtonsRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginTop: 22,
-    },
-
-    modalButton: {
-      flex: 1,
-      marginHorizontal: 4,
-      paddingVertical: 12,
-      borderRadius: 8,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    modalCancel: {
-      backgroundColor: theme.card,
-      borderWidth: 1,
-      borderColor: theme.border,
-    },
-    modalConfirm: {
-      backgroundColor: theme.accent,
-    },
-    modalCreate: {
-      backgroundColor: theme.accent,
-    },
-    modalButtonText: {
-      color: theme.accentText,
-      fontSize: 15,
-      fontWeight: '600',
-    },
-    modalCancelText: {
-      color: theme.textPrimary,
-    },
-
-    modalPrimaryText: {
-      color: theme.accentText,
-    },
-
-    detailText: {
-      fontSize: 14,
-      color: theme.textSecondary,
-      marginTop: 4,
-    },
-
-    // Report link under meetup details
-    reportLink: {
-      marginTop: 16,
-      marginBottom: 8,
-    },
-    reportLinkText: {
-      fontSize: 13,
-      color: theme.accent,
-      textDecorationLine: 'underline',
-    },
-
-    // Report modal
-    reportReasonRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 8,
-      marginTop: 8,
-    },
-    reportReasonChip: {
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: theme.border,
-      marginRight: 6,
-      marginBottom: 6,
-    },
-    reportReasonChipActive: {
-      backgroundColor: theme.accent,
-      borderColor: theme.accent,
-    },
-    reportReasonText: {
-      fontSize: 13,
-      color: theme.textSecondary,
-    },
-    reportReasonTextActive: {
-      color: theme.accentText,
-      fontWeight: '600',
-    },
-    reportInput: {
-      marginTop: 6,
-      minHeight: 80,
-      maxHeight: 140,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: theme.border,
-      paddingHorizontal: 10,
-      paddingVertical: 8,
-      color: theme.textPrimary,
-      backgroundColor: theme.card,
-      textAlignVertical: 'top',
-    },
-    reportButtonsRow: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
-      marginTop: 18,
-    },
-    reportCancelButton: {
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      borderRadius: 8,
-      marginRight: 10,
-    },
-    reportCancelText: {
-      fontSize: 14,
-      color: theme.accent,
-    },
-    reportSubmitButton: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 8,
-      backgroundColor: theme.accent,
-    },
-    reportSubmitText: {
-      fontSize: 14,
-      color: theme.accentText,
-      fontWeight: '600',
-    },
-  });
-
-// ------------------------------
-// HEADER (MEETUPS TITLE + DECOR)
-// ------------------------------
-
-const createHeaderStyles = (COLORS: any, theme: any) =>
-  StyleSheet.create({
-    wrap: {
-      paddingHorizontal: 22,
-      paddingTop: 18,
-      paddingBottom: 12,
-      backgroundColor: COLORS.bg,
-    },
-    title: {
-      fontSize: 36,
-      fontWeight: '800',
-      color: COLORS.purpleDark,
-      letterSpacing: 1,
-    },
-    subTitle: {
-      marginTop: 4,
-      fontSize: 15,
-      color: theme.textSecondary,
-    },
-    moon: {
-      position: 'absolute',
-      right: 22,
-      top: 12,
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-    },
-  });
-
-// ------------------------------
-// PUFFY HEADER CLOUD
-// ------------------------------
-
-const createHeaderCloudStyles = (COLORS: any, _theme: any) =>
-  StyleSheet.create({
-    wrap: {
-      marginTop: 14,
-      alignSelf: 'flex-start',
-      position: 'relative',
-    },
-    shadow: {
-      height: 18,
-      width: 75,
-      backgroundColor: COLORS.yellowShadow,
-      borderRadius: 20,
-      marginLeft: 8,
-      marginBottom: -10,
-    },
-    bubble: {
-      position: 'absolute',
-      backgroundColor: COLORS.yellow,
-      borderRadius: 999,
-    },
-    base: {
-      height: 26,
-      marginTop: 16,
-      marginLeft: 16,
-      marginRight: 16,
-      borderRadius: 999,
-      backgroundColor: COLORS.yellow,
-    },
-  });
-
-// ------------------------------
-// MEETUP CLOUD ITEMS
-// ------------------------------
-
-const createCloudStyles = (COLORS: any, theme: any) =>
-  StyleSheet.create({
-    // container for each cloud card
-    wrap: {
-      marginBottom: 32,
-    },
-
-    // legacy cloud styles (still fine to keep if you use them later)
-    cloudContainer: {
-      marginBottom: 20,
-    },
-    cloudBase: {
-      backgroundColor: COLORS.cloud,
-      borderRadius: 22,
-      padding: 18,
-      shadowColor: '#000',
-      shadowOpacity: 0.12,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 4,
-    },
-    cloudTitle: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: theme.textPrimary,
-    },
-    cloudDescription: {
-      fontSize: 14,
-      marginTop: 6,
-      color: theme.textSecondary,
-    },
-    cloudFooter: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginTop: 14,
-    },
-    capacityText: {
-      fontSize: 13,
-      color: theme.textSecondary,
-    },
-    joinButton: {
-      backgroundColor: COLORS.purple,
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 8,
-    },
-    joinButtonText: {
-      color: theme.accentText,
-      fontWeight: '600',
-      fontSize: 14,
-    },
-
-    // CreateCloudButton text
-    createText: {
-      fontSize: 24,
-      fontWeight: '700',
-      color: theme.textPrimary,
-    },
-
-    // CloudItem label row (title + capacity)
-    labelWrap: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-    },
-    labelTitle: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: theme.textPrimary,
-      flexShrink: 1,
-      marginRight: 8,
-    },
-    labelCapacity: {
-      fontSize: 13,
-      color: theme.textSecondary,
-    },
-  });
+const stylesCloud = StyleSheet.create({
+  wrap: {
+    marginVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shadowPlate: {
+    position: 'absolute',
+    bottom: -4,
+    left: 10,
+    width: '92%',
+    height: 18,
+    backgroundColor: COLORS.cloudShadowPlate,
+    borderRadius: 20,
+    alignSelf: 'center',
+    opacity: 1,
+    zIndex: 0,
+  },
+  cloudBase: {
+    width: '100%',
+    height: 58,
+    backgroundColor: COLORS.cloud,
+    borderRadius: 35,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    zIndex: 2,
+  },
+  topPuffLarge: {
+    position: 'absolute',
+    top: -26,
+    width: '48%',
+    height: 70,
+    backgroundColor: COLORS.cloud,
+    borderRadius: 90,
+    zIndex: 3,
+  },
+  topPuffSmallLeft: {
+    position: 'absolute',
+    top: -12,
+    left: 12,
+    width: '28%',
+    height: 48,
+    backgroundColor: COLORS.cloud,
+    borderRadius: 50,
+    zIndex: 3,
+  },
+  topPuffSmallRight: {
+    position: 'absolute',
+    top: -10,
+    right: 12,
+    width: '28%',
+    height: 46,
+    backgroundColor: COLORS.cloud,
+    borderRadius: 50,
+    zIndex: 3,
+  },
+  createText: {
+    fontSize: 25,
+    fontFamily: 'CherryBombOne',
+    color: '#181818ff',
+    letterSpacing: 1,
+    marginTop: -10,
+  },
+  textWrap: {
+    position: 'absolute',
+    top: 8,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  meetupTitle: {
+    fontSize: 15,
+    fontFamily: 'CherryBombOne',
+    color: '#181818',
+  },
+  meetupCount: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#3A2A0A',
+  },
+  labelWrap: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    zIndex: 10,
+    alignItems: 'center',
+  },
+  labelTitle: {
+    fontSize: 14,
+    color: '#181818',
+    textAlign: 'center',
+    fontFamily: 'CherryBombOne',
+  },
+  labelCapacity: {
+    marginTop: 2,
+    fontSize: 12,
+    color: '#4a3b3b',
+    fontFamily: 'CherryBombOne',
+  },
+});

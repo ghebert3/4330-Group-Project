@@ -14,7 +14,6 @@ export type ThemeMode = "light" | "dark" | "system";
 export type Theme = {
   background: string;
   card: string;
-  cardLite: string;
   textPrimary: string;
   textSecondary: string;
   accent: string;
@@ -34,7 +33,6 @@ const PURPLE_BG = "#461D7C";
 export const THEME_LIGHT: Theme = {
   background: BG,
   card: "#f5f5f5",
-  cardLite: "#FAD03C",
   textPrimary: "#222222",
   textSecondary: "#666666",
   accent: "#461D7C",
@@ -51,7 +49,6 @@ export const THEME_LIGHT: Theme = {
 export const THEME_DARK: Theme = {
   background: PURPLE_BG,
   card: "#2B0F4A",
-  cardLite: "#2B0F4A",
   textPrimary: "#F7EEDB",
   textSecondary: "#D3C7F5",
   accent: "#FAD03C", // gold
