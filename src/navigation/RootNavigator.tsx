@@ -12,6 +12,8 @@ import DiscoverScreen from '../screens/DiscoverScreen';
 import DMThreadScreen from '../screens/DMThreadScreen';
 import DMListScreen from '../screens/DMListScreen';
 import DMNewChatScreen from '../screens/DMNewChatScreen';
+import DiscoverEditor from '../screens/DiscoverEditor';
+
 
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
@@ -149,7 +151,6 @@ export default function RootNavigator() {
           screenOptions={{ headerShown: false }}
           initialRouteName="Startup"
         >
-          {/* Startup / Auth */}
           <Stack.Screen name="Startup" component={StartupScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="SignUp" component={SignUpScreen} />
@@ -164,10 +165,14 @@ export default function RootNavigator() {
             options={{ headerShown: false }}
           />
 
-          {/* Main app (tabs) */}
           <Stack.Screen name="AppTabs" component={AppTabs} />
 
-          {/* DM stack screens */}
+          <Stack.Screen
+            name="DiscoverEditor"
+            component={DiscoverEditor}
+            options={{ presentation: 'card', headerShown: false }}
+          />
+
           <Stack.Screen name="DMThread" component={DMThreadScreen} />
           <Stack.Screen name="DMNewChat" component={DMNewChatScreen} />
         </Stack.Navigator>

@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme';
+import type { Theme } from '../theme';
 
 type ConversationRow = {
   id: number;
@@ -21,16 +22,14 @@ type ConversationRow = {
   lastMessageAt: string | null;
 };
 
-const BG = '#F7EEDB';
-const PURPLE = '#7E57C2';
-
 export default function DMListScreen() {
   const navigation = useNavigation<any>();
+  const { theme } = useTheme();
+  const styles = makeStyles(theme);
 
   const [conversations, setConversations] = useState<ConversationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const { theme } = useTheme();
 
   const loadConversations = useCallback(async () => {
     try {
@@ -227,7 +226,7 @@ setConversations(unique);
 
       {loading && !refreshing ? (
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="small" color={PURPLE} />
+          <ActivityIndicator size="small" color={theme.accent} />
           <Text style={styles.loadingText}>Loading conversations…</Text>
         </View>
       ) : conversations.length === 0 ? (
@@ -252,10 +251,11 @@ setConversations(unique);
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: BG,
+    backgroundColor: theme.background,
   },
   header: {
     paddingHorizontal: 20,
@@ -268,16 +268,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#3f2b64',
+    color: theme.textPrimary,
   },
   newButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: PURPLE,
+    backgroundColor: theme.accent,
   },
   newButtonText: {
-    color: 'white',
+    color: theme.accentText,
     fontWeight: '600',
     fontSize: 13,
   },
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginLeft: 10,
-    color: '#555',
+    color: theme.textSecondary,
   },
   emptyWrap: {
     flex: 1,
@@ -300,12 +300,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#444',
+    color: theme.textPrimary,
     marginBottom: 4,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: theme.textSecondary,
     textAlign: 'center',
   },
   listContent: {
@@ -319,20 +319,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginVertical: 4,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: theme.card,
   },
   rowAvatar: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#e0d2ff',
+    backgroundColor: theme.chipBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
   },
   avatarText: {
     fontWeight: '700',
-    color: '#4a2a8a',
+    color: theme.accent,
   },
   rowTextWrap: {
     flex: 1,
@@ -340,16 +340,17 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: theme.textPrimary,
   },
   rowPreview: {
     fontSize: 13,
-    color: '#777',
+    color: theme.textSecondary,
     marginTop: 2,
   },
   rowTime: {
     fontSize: 11,
-    color: '#999',
+    color: theme.textSecondary,
     marginLeft: 8,
-  },
-});
+    },
+  });
+}

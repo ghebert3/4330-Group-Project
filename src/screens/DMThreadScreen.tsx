@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme';
+import type { Theme } from '../theme';
+import BackHeader from '../components/BackHeader';
 
 type MessageRow = {
   id: number;
@@ -26,9 +28,6 @@ type RouteParams = {
   conversationId: number;
 };
 
-const BG = '#F7EEDB';
-const PURPLE = '#7E57C2';
-
 export default function DMThreadScreen() {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
@@ -40,6 +39,8 @@ export default function DMThreadScreen() {
   const [text, setText] = useState('');
   const [otherUserName, setOtherUserName] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const { theme } = useTheme();
+  const styles = makeStyles(theme);
 
   // ---- Load current user once ----
   useEffect(() => {
@@ -196,7 +197,7 @@ export default function DMThreadScreen() {
         <Text
           style={[
             styles.messageText,
-            isMine && { color: 'white' },
+            isMine && { color: theme.accentText },
           ]}
         >
           {item.body}
@@ -204,7 +205,7 @@ export default function DMThreadScreen() {
         <Text
           style={[
             styles.messageTime,
-            isMine && { color: '#e0dfff' },
+            isMine && { color: theme.accentText },
           ]}
         >
           {new Date(item.created_at).toLocaleTimeString([], {
@@ -218,21 +219,17 @@ export default function DMThreadScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
+      <BackHeader
+        title={otherUserName ?? 'Conversation'}
+        backgroundColor={theme.background}
+        textColor={theme.textPrimary}
+      />
+
       <KeyboardAvoidingView
         style={styles.root}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={80}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backText}>{'< Back'}</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {otherUserName ?? 'Conversation'}
-          </Text>
-          <View style={{ width: 50 }} />
-        </View>
 
         {/* Messages */}
         {loading ? (
@@ -249,7 +246,7 @@ export default function DMThreadScreen() {
         ) : (
           <FlatList
             data={messages}
-            keyExtractor={item => item.id.toString()}
+            keyExtractor={(item) => item.id.toString()}
             contentContainerStyle={styles.listContent}
             renderItem={renderItem}
           />
@@ -259,7 +256,8 @@ export default function DMThreadScreen() {
         <View style={styles.inputBar}>
           <TextInput
             style={styles.input}
-            placeholder="Message..."
+            placeholder="Message."
+            placeholderTextColor={theme.textSecondary}
             value={text}
             onChangeText={setText}
             multiline
@@ -280,99 +278,89 @@ export default function DMThreadScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: BG,
-  },
-  header: {
-    height: 52,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backText: {
-    fontSize: 14,
-    color: PURPLE,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#3f2b64',
-  },
-  listContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  messageBubble: {
-    maxWidth: '75%',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 14,
-    marginVertical: 4,
-  },
-  messageMine: {
-    backgroundColor: PURPLE,
-    alignSelf: 'flex-end',
-  },
-  messageTheirs: {
-    backgroundColor: 'white',
-    alignSelf: 'flex-start',
-  },
-  messageText: {
-    color: '#111',
-  },
-  messageTime: {
-    fontSize: 10,
-    color: '#777',
-    marginTop: 2,
-    textAlign: 'right',
-  },
-  emptyWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#444',
-    marginBottom: 4,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-  },
-  inputBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#ddd',
-    backgroundColor: '#fff',
-  },
-  input: {
-    flex: 1,
-    minHeight: 40,
-    maxHeight: 100,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 18,
-    backgroundColor: '#f5f5f5',
-  },
-  sendButton: {
-    marginLeft: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 18,
-    backgroundColor: PURPLE,
-  },
-  sendText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-});
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    content: {
+      flex: 1,
+    },
+    listContent: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    messageBubble: {
+      maxWidth: '75%',
+      paddingHorizontal: 10,
+      paddingVertical: 8,
+      borderRadius: 14,
+      marginVertical: 4,
+    },
+    messageMine: {
+      backgroundColor: theme.accent,
+      alignSelf: 'flex-end',
+    },
+    messageTheirs: {
+      backgroundColor: theme.card,
+      alignSelf: 'flex-start',
+    },
+    messageText: {
+      color: theme.textPrimary,
+    },
+    messageTime: {
+      fontSize: 10,
+      color: theme.textSecondary,
+      marginTop: 2,
+      textAlign: 'right',
+    },
+    emptyWrap: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+    },
+    emptyTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.textPrimary,
+      marginBottom: 4,
+    },
+    emptySubtitle: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      textAlign: 'center',
+    },
+    inputBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.border,
+      backgroundColor: theme.card,
+    },
+    input: {
+      flex: 1,
+      minHeight: 40,
+      maxHeight: 100,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 18,
+      backgroundColor: theme.card,
+      color: theme.textPrimary,
+    },
+    sendButton: {
+      marginLeft: 8,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 18,
+      backgroundColor: theme.accent,
+    },
+    sendText: {
+      color: theme.accentText,
+      fontWeight: '600',
+    },
+  });
+}
