@@ -111,10 +111,30 @@ function PuffyHeaderCloud({ style }: { style?: object }) {
   return (
     <View style={[stylesHeaderCloud.wrap, style]}>
       <View style={stylesHeaderCloud.shadow} />
-      <View style={[stylesHeaderCloud.bubble, { width: 44, height: 44, left: 0, top: -6 }]} />
-      <View style={[stylesHeaderCloud.bubble, { width: 64, height: 64, left: 24, top: -18 }]} />
-      <View style={[stylesHeaderCloud.bubble, { width: 48, height: 48, left: 78, top: -8 }]} />
-      <View style={[stylesHeaderCloud.bubble, { width: 38, height: 38, left: 114, top: 0 }]} />
+      <View
+        style={[
+          stylesHeaderCloud.bubble,
+          { width: 44, height: 44, left: 0, top: -6 },
+        ]}
+      />
+      <View
+        style={[
+          stylesHeaderCloud.bubble,
+          { width: 64, height: 64, left: 24, top: -18 },
+        ]}
+      />
+      <View
+        style={[
+          stylesHeaderCloud.bubble,
+          { width: 48, height: 48, left: 78, top: -8 },
+        ]}
+      />
+      <View
+        style={[
+          stylesHeaderCloud.bubble,
+          { width: 38, height: 38, left: 114, top: 0 },
+        ]}
+      />
       <View style={stylesHeaderCloud.base} />
     </View>
   );
@@ -127,7 +147,10 @@ function CreateCloudButton({ onPress }: { onPress: () => void }) {
     <TouchableOpacity
       activeOpacity={0.9}
       onPress={onPress}
-      style={[stylesCloud.wrap, { width: cardWidth, alignSelf: 'center', marginBottom: 26 }]}
+      style={[
+        stylesCloud.wrap,
+        { width: cardWidth, alignSelf: 'center', marginBottom: 26 },
+      ]}
     >
       <View
         style={{
@@ -389,20 +412,19 @@ export default function MeetupsScreen() {
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const isIOS = Platform.OS === 'ios';
 
-
   const [currentUserId, setCurrentUserId] = useState<string | null>(
     routeParams.currentUserId ?? null
   );
 
-  const [participants, setParticipants] = useState<{ id: string; email: string }[]>([]);
+  const [participants, setParticipants] = useState<
+    { id: string; email: string }[]
+  >([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
 
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedMeetup, setSelectedMeetup] = useState<Meetup | null>(null);
   const [hostEmail, setHostEmail] = useState<string | null>(null);
 
-
-  //  REPORTING STATE 
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [reportMeetupId, setReportMeetupId] = useState<string | null>(null);
   const [reportMeetupTitle, setReportMeetupTitle] = useState<string>('');
@@ -474,77 +496,75 @@ export default function MeetupsScreen() {
   };
 
   const openDetails = async (meetup: Meetup) => {
-  setSelectedMeetup(meetup);
-  setDetailsOpen(true);
-  setParticipants([]);
-  setLoadingParticipants(false);
-  setHostEmail(null);
+    setSelectedMeetup(meetup);
+    setDetailsOpen(true);
+    setParticipants([]);
+    setLoadingParticipants(false);
+    setHostEmail(null);
 
-  // 1) Load host info so anyone can see who made it
-  if (meetup.host) {
-    try {
-      const { data: hostProfile, error: hostErr } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', meetup.host)
-        .single();
+    if (meetup.host) {
+      try {
+        const { data: hostProfile, error: hostErr } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', meetup.host)
+          .single();
 
-      if (!hostErr && hostProfile) {
-        setHostEmail(hostProfile.email as string);
-      } else {
+        if (!hostErr && hostProfile) {
+          setHostEmail(hostProfile.email as string);
+        } else {
+          setHostEmail(null);
+        }
+      } catch (e) {
+        console.error('Error loading host profile', e);
         setHostEmail(null);
       }
-    } catch (e) {
-      console.error('Error loading host profile', e);
-      setHostEmail(null);
-    }
-  } else {
-    setHostEmail('Whirl demo meetup');
-  }
-
-  if (!currentUserId || currentUserId !== meetup.host) return;
-
-  try {
-    setLoadingParticipants(true);
-
-    const { data: rows, error: partErr } = await supabase
-      .from('meetup_participants')
-      .select('user_id')
-      .eq('meetup_id', Number(meetup.id));
-
-    if (partErr) {
-      console.error('Error loading participants', partErr);
-      return;
+    } else {
+      setHostEmail('Whirl demo meetup');
     }
 
-    if (!rows || rows.length === 0) {
-      setParticipants([]);
-      return;
+    if (!currentUserId || currentUserId !== meetup.host) return;
+
+    try {
+      setLoadingParticipants(true);
+
+      const { data: rows, error: partErr } = await supabase
+        .from('meetup_participants')
+        .select('user_id')
+        .eq('meetup_id', Number(meetup.id));
+
+      if (partErr) {
+        console.error('Error loading participants', partErr);
+        return;
+      }
+
+      if (!rows || rows.length === 0) {
+        setParticipants([]);
+        return;
+      }
+
+      const userIds = rows.map(r => r.user_id);
+
+      const { data: profs, error: profErr } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .in('id', userIds);
+
+      if (profErr) {
+        console.error('Error loading participant emails', profErr);
+        return;
+      }
+
+      const mapped = (profs ?? []).map(p => ({
+        id: p.id as string,
+        email: p.email as string,
+      }));
+
+      setParticipants(mapped);
+    } finally {
+      setLoadingParticipants(false);
     }
-
-    const userIds = rows.map(r => r.user_id);
-
-    const { data: profs, error: profErr } = await supabase
-      .from('profiles')
-      .select('id, email')
-      .in('id', userIds);
-
-    if (profErr) {
-      console.error('Error loading participant emails', profErr);
-      return;
-    }
-
-    const mapped = (profs ?? []).map(p => ({
-      id: p.id as string,
-      email: p.email as string,
-    }));
-
-    setParticipants(mapped);
-  } finally {
-    setLoadingParticipants(false);
-  }
-};
-
+  };
 
   const handleSubmitCreate = async () => {
     const trimmedTitle = newTitle.trim();
@@ -660,7 +680,7 @@ export default function MeetupsScreen() {
           location: trimmedLocation,
           max_capacity: cap,
           starts_at: startsAtIso,
-          ends_at: endsAtIso,  
+          ends_at: endsAtIso,
         })
         .select()
         .single();
@@ -834,7 +854,6 @@ export default function MeetupsScreen() {
           resizeMode="stretch"
         />
 
-        {/* Create Meetup Modal */}
         <Modal
           visible={createOpen}
           transparent
@@ -881,7 +900,12 @@ export default function MeetupsScreen() {
                 accessibilityLabel="Choose meetup date"
                 accessibilityHint="Opens a calendar so you can pick the meetup date"
               >
-                <Text style={{ color: newDate ? '#000' : '#888' }}>
+                <Text
+                  style={{
+                    color: newDate ? '#000' : '#888',
+                    fontFamily: 'CherryBombOne',
+                  }}
+                >
                   {newDate || 'Tap to pick a date'}
                 </Text>
               </TouchableOpacity>
@@ -889,12 +913,12 @@ export default function MeetupsScreen() {
               {showDatePicker && (
                 <DateTimePicker
                   value={newDate ? new Date(newDate + 'T12:00:00') : new Date()}
-                   mode="date"
-                   display={isIOS ? 'inline' : 'calendar'}
-                   minimumDate={new Date()}
-                     onChange={handleDateChange}
-                       />
-)}
+                  mode="date"
+                  display={isIOS ? 'inline' : 'calendar'}
+                  minimumDate={new Date()}
+                  onChange={handleDateChange}
+                />
+              )}
 
               <Text style={styles.modalLabel}>Time</Text>
               <TouchableOpacity
@@ -904,21 +928,24 @@ export default function MeetupsScreen() {
                 accessibilityLabel="Choose meetup time"
                 accessibilityHint="Opens a clock so you can pick the meetup time"
               >
-                <Text style={{ color: newTime ? '#000' : '#888' }}>
+                <Text
+                  style={{
+                    color: newTime ? '#000' : '#888',
+                    fontFamily: 'CherryBomb',
+                  }}
+                >
                   {newTime || 'Tap to pick a time'}
                 </Text>
               </TouchableOpacity>
 
-             {showTimePicker && (
-            <DateTimePicker
-                 value={new Date()}
-                 mode="time"
-                 display={isIOS ? 'spinner' : 'clock'}
-                 onChange={handleTimeChange}
-               />
+              {showTimePicker && (
+                <DateTimePicker
+                  value={new Date()}
+                  mode="time"
+                  display={isIOS ? 'spinner' : 'clock'}
+                  onChange={handleTimeChange}
+                />
               )}
-
-
 
               <Text style={styles.modalLabel}>End time </Text>
               <TouchableOpacity
@@ -928,7 +955,12 @@ export default function MeetupsScreen() {
                 accessibilityLabel="Choose meetup end time"
                 accessibilityHint="Opens a clock so you can pick when the meetup ends"
               >
-                <Text style={{ color: newEndTime ? '#000' : '#888' }}>
+                <Text
+                  style={{
+                    color: newEndTime ? '#000' : '#888',
+                    fontFamily: 'CherryBomb',
+                  }}
+                >
                   {newEndTime || 'Tap to pick an end time'}
                 </Text>
               </TouchableOpacity>
@@ -971,7 +1003,6 @@ export default function MeetupsScreen() {
           </View>
         </Modal>
 
-        {/* Meetup Details Modal */}
         <Modal
           visible={detailsOpen}
           transparent
@@ -981,21 +1012,20 @@ export default function MeetupsScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               {selectedMeetup && (
-  <>
+                <>
                   <Text style={styles.modalTitle}>{selectedMeetup.title}</Text>
 
-                   <Text style={styles.modalLabel}>Hosted by</Text>
-                     <Text style={styles.detailText}>
-                      {hostEmail
+                  <Text style={styles.modalLabel}>Hosted by</Text>
+                  <Text style={styles.detailText}>
+                    {hostEmail
                       ? hostEmail
                       : selectedMeetup.host
                       ? 'Loading host…'
                       : 'Whirl demo meetup'}
-                        </Text>
+                  </Text>
 
                   <Text style={styles.modalLabel}>Location</Text>
                   <Text style={styles.detailText}>{selectedMeetup.location}</Text>
-
 
                   <Text style={styles.modalLabel}>Description</Text>
                   <Text style={styles.detailText}>{selectedMeetup.description}</Text>
@@ -1040,7 +1070,9 @@ export default function MeetupsScreen() {
                         <Text style={styles.detailText}>Loading…</Text>
                       )}
                       {!loadingParticipants && participants.length === 0 && (
-                        <Text style={styles.detailText}>Nobody has joined yet.</Text>
+                        <Text style={styles.detailText}>
+                          Nobody has joined yet.
+                        </Text>
                       )}
                       {!loadingParticipants &&
                         participants.map(p => (
@@ -1055,7 +1087,9 @@ export default function MeetupsScreen() {
                     style={styles.reportLink}
                     onPress={() => openReportModalForMeetup(selectedMeetup)}
                   >
-                    <Text style={styles.reportLinkText}>Report this meetup</Text>
+                    <Text style={styles.reportLinkText}>
+                      Report this meetup
+                    </Text>
                   </TouchableOpacity>
 
                   <View style={styles.modalButtonsRow}>
@@ -1081,7 +1115,6 @@ export default function MeetupsScreen() {
           </View>
         </Modal>
 
-        {/* Report Modal */}
         <Modal
           visible={reportModalVisible}
           transparent
@@ -1100,27 +1133,35 @@ export default function MeetupsScreen() {
 
               <Text style={styles.modalLabel}>Reason</Text>
               <View style={styles.reportReasonRow}>
-                {(['safety', 'harassment', 'spam', 'inappropriate', 'other'] as const).map(
-                  reason => (
-                    <TouchableOpacity
-                      key={reason}
+                {(
+                  [
+                    'safety',
+                    'harassment',
+                    'spam',
+                    'inappropriate',
+                    'other',
+                  ] as const
+                ).map(reason => (
+                  <TouchableOpacity
+                    key={reason}
+                    style={[
+                      styles.reportReasonChip,
+                      reportReason === reason &&
+                        styles.reportReasonChipActive,
+                    ]}
+                    onPress={() => setReportReason(reason)}
+                  >
+                    <Text
                       style={[
-                        styles.reportReasonChip,
-                        reportReason === reason && styles.reportReasonChipActive,
+                        styles.reportReasonText,
+                        reportReason === reason &&
+                          styles.reportReasonTextActive,
                       ]}
-                      onPress={() => setReportReason(reason)}
                     >
-                      <Text
-                        style={[
-                          styles.reportReasonText,
-                          reportReason === reason && styles.reportReasonTextActive,
-                        ]}
-                      >
-                        {reason}
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                )}
+                      {reason}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
 
               <Text style={styles.modalLabel}>Details (optional)</Text>
@@ -1200,13 +1241,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     marginBottom: 10,
     color: COLORS.purpleDark,
-    fontFamily: 'CherryBombOne',
+    fontFamily: 'CherryBomb',
   },
   modalLabel: {
     fontSize: 14,
     marginTop: 8,
     marginBottom: 4,
     color: '#444',
+    fontFamily: 'CherryBomb',
   },
   modalInput: {
     borderWidth: 1,
@@ -1216,17 +1258,20 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: 'white',
     fontSize: 14,
+    fontFamily: 'CherryBomb',
   },
   modalDescription: {
     marginTop: 8,
     fontSize: 14,
     color: '#4a3b3b',
     lineHeight: 20,
+    fontFamily: 'CherryBomb',
   },
   detailText: {
     fontSize: 14,
     color: '#333',
     marginBottom: 6,
+    fontFamily: 'CherryBomb',
   },
 
   modalButtonsRow: {
@@ -1252,10 +1297,9 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'CherryBomb',
   },
 
-  // ----- REPORTING STYLES -----
   reportLink: {
     marginTop: 10,
     alignSelf: 'flex-start',
@@ -1264,6 +1308,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#C62828',
     textDecorationLine: 'underline',
+    fontFamily: 'CherryBomb',
   },
 
   reportReasonRow: {
@@ -1288,9 +1333,11 @@ const styles = StyleSheet.create({
   reportReasonText: {
     fontSize: 12,
     color: '#555',
+    fontFamily: 'CherryBomb',
   },
   reportReasonTextActive: {
     color: '#fff',
+    fontFamily: 'CherryBomb',
   },
   reportInput: {
     borderWidth: 1,
@@ -1303,6 +1350,7 @@ const styles = StyleSheet.create({
     minHeight: 80,
     maxHeight: 140,
     textAlignVertical: 'top',
+    fontFamily: 'CherryBomb',
   },
   reportButtonsRow: {
     flexDirection: 'row',
@@ -1319,7 +1367,7 @@ const styles = StyleSheet.create({
   reportCancelText: {
     color: '#333',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'CherryBomb',
   },
   reportSubmitButton: {
     paddingHorizontal: 16,
@@ -1330,7 +1378,7 @@ const styles = StyleSheet.create({
   reportSubmitText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'CherryBomb',
   },
 });
 
@@ -1346,7 +1394,7 @@ const stylesHeader = StyleSheet.create({
     letterSpacing: 2,
     right: 6,
     color: COLORS.purpleDark,
-    fontFamily: 'FodaDisplay',
+    fontFamily: 'CherryBomb',
   },
   moon: {
     position: 'absolute',
@@ -1460,7 +1508,7 @@ const stylesCloud = StyleSheet.create({
   },
   createText: {
     fontSize: 25,
-    fontFamily: 'CherryBombOne',
+    fontFamily: 'CherryBomb',
     color: '#181818ff',
     letterSpacing: 1,
     marginTop: -10,
@@ -1475,14 +1523,14 @@ const stylesCloud = StyleSheet.create({
   },
   meetupTitle: {
     fontSize: 15,
-    fontFamily: 'CherryBombOne',
+    fontFamily: 'CherryBomb',
     color: '#181818',
   },
   meetupCount: {
     marginTop: 2,
     fontSize: 12,
-    fontWeight: '700',
     color: '#3A2A0A',
+    fontFamily: 'CherryBomb',
   },
   labelWrap: {
     position: 'absolute',
@@ -1495,12 +1543,12 @@ const stylesCloud = StyleSheet.create({
     fontSize: 14,
     color: '#181818',
     textAlign: 'center',
-    fontFamily: 'CherryBombOne',
+    fontFamily: 'CherryBomb',
   },
   labelCapacity: {
     marginTop: 2,
     fontSize: 12,
     color: '#4a3b3b',
-    fontFamily: 'CherryBombOne',
+    fontFamily: 'CherryBomb',
   },
 });
