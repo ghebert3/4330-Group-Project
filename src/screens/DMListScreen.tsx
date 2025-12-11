@@ -1,4 +1,3 @@
-// src/screens/DMListScreen.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
@@ -17,7 +16,7 @@ import type { Theme } from '../theme';
 
 type ConversationRow = {
   id: number;
-  title: string; 
+  title: string;
   lastMessageBody: string | null;
   lastMessageAt: string | null;
 };
@@ -48,7 +47,6 @@ export default function DMListScreen() {
 
       const currentUserId = user.id;
 
-      // 1) Get all conversation_ids where I'm a participant
       const { data: parts, error: partsErr } = await supabase
         .from('conversation_participants')
         .select('conversation_id')
@@ -67,7 +65,6 @@ export default function DMListScreen() {
         return;
       }
 
-      // 2) For those conversations, load ALL participants + their emails
       const { data: allParts, error: allPartsErr } = await supabase
         .from('conversation_participants')
         .select('conversation_id, user_id, profiles ( email )')
@@ -77,14 +74,12 @@ export default function DMListScreen() {
         console.error('Error loading participant emails', allPartsErr);
       }
 
-      // Build a title (other user's name/email) for each conversation
       const titleByConvo = new Map<number, string>();
 
       (allParts ?? []).forEach((row: any) => {
         const cid = row.conversation_id as number;
         const uid = row.user_id as string;
 
-        // We only care about "the other person", not me
         if (uid === currentUserId) return;
 
         if (!titleByConvo.has(cid)) {
@@ -94,7 +89,6 @@ export default function DMListScreen() {
         }
       });
 
-      // 3) Get all messages in those conversations, newest first
       const { data: msgs, error: msgsErr } = await supabase
         .from('messages')
         .select('id, conversation_id, body, created_at')
@@ -124,44 +118,41 @@ export default function DMListScreen() {
 
       const rows: ConversationRow[] = [];
 
-convoIds.forEach(cid => {
-  const latest = latestByConvo.get(cid);
-  if (!latest) {
-    return;
-  }
+      convoIds.forEach(cid => {
+        const latest = latestByConvo.get(cid);
+        if (!latest) {
+          return;
+        }
 
-  const fallbackTitle = `Conversation ${cid}`;
-  rows.push({
-    id: cid,
-    title: titleByConvo.get(cid) ?? fallbackTitle,
-    lastMessageBody: latest.body,
-    lastMessageAt: latest.created_at,
-  });
-});
+        const fallbackTitle = `Conversation ${cid}`;
+        rows.push({
+          id: cid,
+          title: titleByConvo.get(cid) ?? fallbackTitle,
+          lastMessageBody: latest.body,
+          lastMessageAt: latest.created_at,
+        });
+      });
 
+      rows.sort((a, b) => {
+        if (!a.lastMessageAt && !b.lastMessageAt) return 0;
+        if (!a.lastMessageAt) return 1;
+        if (!b.lastMessageAt) return -1;
+        return (
+          new Date(b.lastMessageAt).getTime() -
+          new Date(a.lastMessageAt).getTime()
+        );
+      });
 
-rows.sort((a, b) => {
-  if (!a.lastMessageAt && !b.lastMessageAt) return 0;
-  if (!a.lastMessageAt) return 1;
-  if (!b.lastMessageAt) return -1;
-  return (
-    new Date(b.lastMessageAt).getTime() -
-    new Date(a.lastMessageAt).getTime()
-  );
-});
+      const unique: ConversationRow[] = [];
+      const seenTitles = new Set<string>();
 
+      for (const row of rows) {
+        if (seenTitles.has(row.title)) continue;
+        seenTitles.add(row.title);
+        unique.push(row);
+      }
 
-const unique: ConversationRow[] = [];
-const seenTitles = new Set<string>();
-
-for (const row of rows) {
-  if (seenTitles.has(row.title)) continue;
-  seenTitles.add(row.title);
-  unique.push(row);
-}
-
-setConversations(unique);
-
+      setConversations(unique);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -253,104 +244,109 @@ setConversations(unique);
 
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: theme.background,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: theme.textPrimary,
-  },
-  newButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: theme.accent,
-  },
-  newButtonText: {
-    color: theme.accentText,
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  loadingWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginTop: 16,
-  },
-  loadingText: {
-    marginLeft: 10,
-    color: theme.textSecondary,
-  },
-  emptyWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: theme.textPrimary,
-    marginBottom: 4,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: theme.textSecondary,
-    textAlign: 'center',
-  },
-  listContent: {
-    paddingHorizontal: 10,
-    paddingBottom: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    marginVertical: 4,
-    borderRadius: 14,
-    backgroundColor: theme.card,
-  },
-  rowAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: theme.chipBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  avatarText: {
-    fontWeight: '700',
-    color: theme.accent,
-  },
-  rowTextWrap: {
-    flex: 1,
-  },
-  rowTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: theme.textPrimary,
-  },
-  rowPreview: {
-    fontSize: 13,
-    color: theme.textSecondary,
-    marginTop: 2,
-  },
-  rowTime: {
-    fontSize: 11,
-    color: theme.textSecondary,
-    marginLeft: 8,
+    root: {
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    header: {
+      paddingHorizontal: 20,
+      paddingTop: 10,
+      paddingBottom: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    headerTitle: {
+      fontSize: 28,
+      color: theme.textPrimary,
+      fontFamily: 'CherryBomb',
+    },
+    newButton: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 999,
+      backgroundColor: theme.accent,
+    },
+    newButtonText: {
+      color: theme.accentText,
+      fontSize: 13,
+      fontFamily: 'CherryBomb',
+    },
+    loadingWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      marginTop: 16,
+    },
+    loadingText: {
+      marginLeft: 10,
+      color: theme.textSecondary,
+      fontFamily: 'CherryBomb',
+    },
+    emptyWrap: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+    },
+    emptyTitle: {
+      fontSize: 18,
+      color: theme.textPrimary,
+      marginBottom: 4,
+      fontFamily: 'CherryBomb',
+    },
+    emptySubtitle: {
+      fontSize: 14,
+      color: theme.textSecondary,
+      textAlign: 'center',
+      fontFamily: 'CherryBomb',
+    },
+    listContent: {
+      paddingHorizontal: 10,
+      paddingBottom: 16,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 10,
+      paddingVertical: 10,
+      marginVertical: 4,
+      borderRadius: 14,
+      backgroundColor: theme.card,
+    },
+    rowAvatar: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: theme.chipBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 10,
+    },
+    avatarText: {
+      color: theme.accent,
+      fontFamily: 'CherryBomb',
+      fontSize: 18,
+    },
+    rowTextWrap: {
+      flex: 1,
+    },
+    rowTitle: {
+      fontSize: 15,
+      color: theme.textPrimary,
+      fontFamily: 'CherryBomb',
+    },
+    rowPreview: {
+      fontSize: 13,
+      color: theme.textSecondary,
+      marginTop: 2,
+      fontFamily: 'CherryBomb',
+    },
+    rowTime: {
+      fontSize: 11,
+      color: theme.textSecondary,
+      marginLeft: 8,
+      fontFamily: 'CherryBomb',
     },
   });
 }
